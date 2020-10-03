@@ -32,7 +32,7 @@ jobs:
         tox -e black-check
         tox -e isort-check
         tox -e flake8
-        tox -e vulture
+#        tox -e vulture
     - name: Static type check
       run: tox -e mypy
     - name: Check copyright

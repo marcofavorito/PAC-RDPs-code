@@ -24,7 +24,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run:  pip install tox
+      run: |
+        sudo apt-get install -y graphviz
+        pip install tox
     - name: Unit tests and coverage
       run: |
         tox -e py${{ matrix.python-version }}
