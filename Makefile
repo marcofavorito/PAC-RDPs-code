@@ -81,7 +81,7 @@ bandit: ## run bandit
 	bandit src tests 
 
 safety: ## run safety
-	safety
+	safety check
 
 pylint: ## run pylint
 	pylint src tests 
