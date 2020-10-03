@@ -35,8 +35,6 @@ jobs:
 #        tox -e vulture
     - name: Static type check
       run: tox -e mypy
-    - name: Check copyright
-      run: tox -e check-copyright
     - name: Misc checks
       run: |
         tox -e bandit
