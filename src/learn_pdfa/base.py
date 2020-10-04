@@ -18,5 +18,6 @@ def learn_pdfa(**kwargs):
     logger.info(f"Parameters: {pprint.pformat(str(params))}")
     vertices, transitions = learn_subgraph(params)
     logger.info(f"Number of vertices: {len(vertices)}.")
+    logger.info(f"Transitions: {pprint.pformat(transitions)}.")
     pdfa = learn_probabilities((vertices, transitions), params)
     return pdfa

@@ -92,6 +92,9 @@ def learn_subgraph(params: _Params) -> Tuple[Set[int], Dict]:  # noqa: ignore
     N = _compute_N(params, m0)
     logger.info(f"m0 = {m0}")
     logger.info(f"N = {N}")
+    m0 = min(m0, params.m0_max_debug if params.m0_max_debug else m0)
+    N = min(N, params.n1_max_debug if params.n1_max_debug else N)
+    logger.info(f"using m0 = {m0}, N = {N}")
 
     samples = generator.sample(n=N)
     logger.info("Sampling done.")

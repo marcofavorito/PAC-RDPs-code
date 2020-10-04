@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from math import ceil
 from multiprocessing import Pool
-from typing import Callable, Sequence
+from typing import Callable, Optional, Sequence
 
 from src.helpers import assert_
 from src.pdfa import PDFA
@@ -94,8 +94,10 @@ class _Params:
     delta_2: float = 0.1
     mu: float = 0.4
     n: int = 3
-    # debug parameter - upper bound to N
-    n_debug: int = 100000
+    # debug parameters - force upper bounds
+    m0_max_debug: Optional[int] = None
+    n1_max_debug: Optional[int] = None
+    n2_max_debug: Optional[int] = None
 
     def __post_init__(self):
         assert_(
