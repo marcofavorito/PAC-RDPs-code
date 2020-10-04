@@ -90,6 +90,9 @@ def _rename_final_state(
         node_to_rename = len(vertices) - 1
         new_final_node = len(vertices) - 1
         new_node_name = final_node
+        logger.info(
+            f"Renaming node {node_to_rename} with {new_node_name} (final node: {new_final_node})."
+        )
         node_transitions = transition_dict.pop(node_to_rename)
         transition_dict[new_node_name] = node_transitions
         for _, out_transitions in transition_dict.items():
@@ -198,6 +201,8 @@ def learn_subgraph(  # noqa: ignore
             done = True
         iteration += 1
 
+    logger.info(f"Vertices: {pprint.pformat(vertices)}")
+    logger.info(f"Transitions: {pprint.pformat(transitions)}")
     no_out_transitions = vertices.difference(set(transitions.keys()))
     # the final node is the one without outgoing transitions.
     # renumber the vertices and the transition dictionary accordingly.
