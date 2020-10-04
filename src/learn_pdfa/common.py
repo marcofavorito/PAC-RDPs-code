@@ -70,7 +70,8 @@ class MultiprocessedGenerator(Generator):
             n_samples = r.get()
             sample.extend(n_samples)
 
-        return sample
+        nb_samples_to_drop = len(sample) - n
+        return sample[: len(sample) - nb_samples_to_drop]
 
 
 @dataclass(frozen=True)

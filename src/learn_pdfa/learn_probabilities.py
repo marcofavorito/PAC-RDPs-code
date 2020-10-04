@@ -58,7 +58,7 @@ def learn_probabilities(
             )
 
             if next_state is None:
-                break
+                break  # pragma: no cover
             current_state = next_state
 
     gammas: Dict[int, Dict[int, float]] = {}

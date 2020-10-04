@@ -1,9 +1,30 @@
 """Main test module."""
 import numpy as np
+import pytest
 
 from src.learn_pdfa.base import learn_pdfa
-from src.learn_pdfa.common import MultiprocessedGenerator
+from src.learn_pdfa.common import MultiprocessedGenerator, SimpleGenerator
 from src.pdfa import PDFA
+
+
+@pytest.mark.parametrize("generator_class", [SimpleGenerator, MultiprocessedGenerator])
+@pytest.mark.parametrize("nb_samples", [5, 10, 20, 100])
+def test_simple_generator(generator_class, nb_samples):
+    """Test Simple generator 'sample' method."""
+    automaton = PDFA(
+        1,
+        2,
+        {
+            0: {
+                0: (0, 0.5),
+                1: (1, 1 - 0.5),
+            }
+        },
+    )
+    simple_generator = generator_class(automaton)
+    sample = simple_generator.sample(n=nb_samples)
+    assert len(sample) == nb_samples
+    assert all(character in {0, 1} for s in sample for character in s)
 
 
 def test_learn_pdfa_1_state():
