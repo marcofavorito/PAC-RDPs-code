@@ -125,19 +125,19 @@ def test_learn_pdfa_2_states():
     # reading symbol 0
     dest_state, prob = transitions_from_initial_state[0]
     assert dest_state == 1
-    assert np.isclose(prob, p1, rtol=0.01)
+    assert np.isclose(prob, p1, rtol=0.1)
     # reading symbol 1
     dest_state, prob = transitions_from_initial_state[1]
     assert dest_state == 2
-    assert np.isclose(prob, 1 - p1, rtol=0.01)
+    assert np.isclose(prob, 1 - p1, rtol=0.1)
 
     # test transitions from second state
     transitions_from_second_state = pdfa.transition_dict[1]
     # reading symbol 0
     dest_state, prob = transitions_from_second_state[0]
     assert dest_state == 2
-    assert np.isclose(prob, 1 - p2, rtol=0.01)
+    assert np.isclose(prob, 1 - p2, rtol=0.1)
     # reading symbol 1
     dest_state, prob = transitions_from_second_state[1]
     assert dest_state == 1
-    assert np.isclose(prob, p2, rtol=0.01)
+    assert np.isclose(prob, p2, rtol=0.1)
