@@ -6,9 +6,9 @@ from src.learn_pdfa.common import MultiprocessedGenerator
 from src.pdfa import PDFA
 
 
-def test_learn_pdfa_example():
-    """Test the PDFA learn example."""
-    p = 0.5
+def test_learn_pdfa_1_state():
+    """Test the PDFA learning, 1 state."""
+    p = 0.3
     automaton = PDFA(
         1,
         2,
@@ -39,18 +39,18 @@ def test_learn_pdfa_example():
     # reading symbol 0
     dest_state, prob = transitions_from_initial_state[0]
     assert dest_state == 0
-    assert np.isclose(prob, p, rtol=0.01)
+    assert np.isclose(prob, p, rtol=0.1)
 
     # reading symbol 1
     dest_state, prob = transitions_from_initial_state[1]
     assert dest_state == 1
-    assert np.isclose(prob, 1 - p, rtol=0.01)
+    assert np.isclose(prob, 1 - p, rtol=0.1)
 
 
-def test_learn_pdfa_3_states():
-    """Test the PDFA learn example with 3 states."""
-    p1 = 0.5
-    p2 = 0.5
+def test_learn_pdfa_2_states():
+    """Test the PDFA learn example with 2 states."""
+    p1 = 0.4
+    p2 = 0.7
     automaton = PDFA(
         2,
         2,

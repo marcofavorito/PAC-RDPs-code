@@ -1,4 +1,5 @@
 """Implement the Algorithm 1 of (Palmer and Goldberg 2007) to learn subgraph."""
+import pprint
 from collections import Counter
 from math import ceil, log, log2
 from typing import Dict, Optional, Sequence, Set, Tuple
@@ -70,7 +71,38 @@ def _compute_first_multiset(samples: Sequence[Word]) -> Counter:
     return result
 
 
-def learn_subgraph(params: _Params) -> Tuple[Set[int], Dict]:  # noqa: ignore
+def _rename_final_state(
+    vertices: Set[int],
+    transition_dict: Dict[int, Dict[Character, int]],
+    final_node: int,
+) -> None:
+    """
+    Rename final state in set of vertices and transition dictionary.
+
+    It does side-effects on the data structures.
+
+    :param vertices: the set of vertices.
+    :param transition_dict: the transition dictionary.
+    :param final_node: the final node.
+    :return: None
+    """
+    if final_node != len(vertices) - 1:
+        node_to_rename = len(vertices) - 1
+        new_final_node = len(vertices) - 1
+        new_node_name = final_node
+        node_transitions = transition_dict.pop(node_to_rename)
+        transition_dict[new_node_name] = node_transitions
+        for _, out_transitions in transition_dict.items():
+            for character, next_state in out_transitions.items():
+                if next_state == node_to_rename:
+                    out_transitions[character] = new_node_name
+                elif next_state == final_node:
+                    out_transitions[character] = new_final_node
+
+
+def learn_subgraph(  # noqa: ignore
+    params: _Params,
+) -> Tuple[Set[int], Dict[int, Dict[Character, int]]]:
     """
     Learn a subgraph of the true PDFA.
 
@@ -165,4 +197,17 @@ def learn_subgraph(params: _Params) -> Tuple[Set[int], Dict]:  # noqa: ignore
         if cardinality < m0:
             done = True
         iteration += 1
+
+    no_out_transitions = vertices.difference(set(transitions.keys()))
+    # the final node is the one without outgoing transitions.
+    # renumber the vertices and the transition dictionary accordingly.
+    assert (
+        len(no_out_transitions) == 1
+    ), f"Cannot determine which is the final state. The set of candidates is: {no_out_transitions}."
+    final_node = list(no_out_transitions)[0]
+    logger.info(f"Computed final node: {final_node} (no outgoing transitions)")
+    _rename_final_state(vertices, transitions, final_node)
+    logger.info(f"Renamed vertices: {pprint.pformat(vertices)}")
+    logger.info(f"Renamed transitions: {pprint.pformat(transitions)}")
+
     return vertices, transitions
