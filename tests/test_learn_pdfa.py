@@ -21,9 +21,26 @@ def test_simple_generator(generator_class, nb_samples):
             }
         },
     )
-    simple_generator = generator_class(automaton)
-    sample = simple_generator.sample(n=nb_samples)
+    generator = generator_class(automaton)
+    sample = generator.sample(n=nb_samples)
     assert len(sample) == nb_samples
+    assert all(character in {0, 1} for s in sample for character in s)
+
+
+def test_multiprocess_generator_helper_function():
+    """Test multiprocess generator helper function."""
+    automaton = PDFA(
+        1,
+        2,
+        {
+            0: {
+                0: (0, 0.5),
+                1: (1, 1 - 0.5),
+            }
+        },
+    )
+    sample = MultiprocessedGenerator._job(10, automaton.sample)
+    assert len(sample) == 10
     assert all(character in {0, 1} for s in sample for character in s)
 
 
