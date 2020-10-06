@@ -19,12 +19,16 @@ isort = "*"
 mypy = "*"
 bandit = "*"
 safety = "*"
+jupyter = "*"
+mkdocs = "*"
 
 [packages]
 numpy = "*"
 matplotlib = "*"
 gym = "*"
 scipy = "*"
+graphviz = "*"
+jupyter = "*"
 
 [requires]
 python_version = "3.7"
