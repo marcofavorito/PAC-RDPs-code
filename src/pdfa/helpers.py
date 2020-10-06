@@ -4,6 +4,8 @@ from typing import Set
 from src.helpers import assert_
 from src.pdfa.types import Character, State, TransitionFunctionDict, Word
 
+ROUND_PRECISION = 10
+
 
 def _check_transitions_are_legal(
     transitions: TransitionFunctionDict, nb_states: int, alphabet_size: int
@@ -18,9 +20,10 @@ def _check_transitions_are_legal(
             sum_outgoing_probabilities += probability
             _check_is_legal_character(character, alphabet_size)
             _check_is_legal_state_or_final(next_state, nb_states)
+        rounded_sum = round(sum_outgoing_probabilities, ROUND_PRECISION)
         assert_(
-            sum_outgoing_probabilities == 1.0,
-            f"Outgoing probability from state {state} do not sum to 1.",
+            rounded_sum == 1.0,
+            f"Outgoing probability from state {state} do not sum to 1: {rounded_sum}",
         )
 
 

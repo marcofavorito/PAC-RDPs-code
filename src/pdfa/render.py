@@ -3,6 +3,7 @@
 import graphviz
 
 from src.pdfa import PDFA
+from src.pdfa.helpers import ROUND_PRECISION
 
 
 def to_graphviz(pdfa: PDFA) -> graphviz.Digraph:
@@ -20,6 +21,8 @@ def to_graphviz(pdfa: PDFA) -> graphviz.Digraph:
     graph.edge("fake", str(pdfa.initial_state), style="bold")
 
     for (start, char, prob, end) in pdfa.transitions:
-        graph.edge(str(start), str(end), label=f"{char}, {prob}")
+        graph.edge(
+            str(start), str(end), label=f"{char}, {round(prob, ROUND_PRECISION)}"
+        )
 
     return graph
