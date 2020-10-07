@@ -5,7 +5,7 @@ from typing import AbstractSet, Collection, Set, Tuple
 
 import numpy as np
 
-from src.helpers import assert_
+from src.helpers.base import assert_
 from src.pdfa.helpers import (
     _check_ergodicity,
     _check_is_legal_character,

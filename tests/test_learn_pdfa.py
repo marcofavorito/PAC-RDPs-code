@@ -1,30 +1,61 @@
 """Main test module."""
+from abc import abstractmethod
+
 import numpy as np
 import pytest
 
 from src.learn_pdfa.base import learn_pdfa
-from src.learn_pdfa.common import MultiprocessedGenerator, SimpleGenerator
+from src.learn_pdfa.common import Generator, MultiprocessedGenerator, SimpleGenerator
 from src.pdfa import PDFA
 
 
-@pytest.mark.parametrize("generator_class", [SimpleGenerator, MultiprocessedGenerator])
-@pytest.mark.parametrize("nb_samples", [5, 10, 20, 100])
-def test_simple_generator(generator_class, nb_samples):
-    """Test Simple generator 'sample' method."""
-    automaton = PDFA(
-        1,
-        2,
-        {
-            0: {
-                0: (0, 0.5),
-                1: (1, 1 - 0.5),
-            }
-        },
-    )
-    generator = generator_class(automaton)
-    sample = generator.sample(n=nb_samples)
-    assert len(sample) == nb_samples
-    assert all(character in {0, 1} for s in sample for character in s)
+class BaseTestGenerator:
+    """Base test class for generators."""
+
+    def make_automaton(self) -> PDFA:
+        """Make a PDFA to generate samples from."""
+        automaton = PDFA(
+            1,
+            2,
+            {
+                0: {
+                    0: (0, 0.5),
+                    1: (1, 1 - 0.5),
+                }
+            },
+        )
+        return automaton
+
+    @abstractmethod
+    def make_generator(self) -> Generator:
+        """Make a sample generator. To be implemented."""
+
+    def setup(self):
+        """Set up the test."""
+        self.generator = self.make_generator()
+
+    @pytest.mark.parametrize("nb_samples", [5, 10, 20, 100])
+    def test_generation(self, nb_samples):
+        """Test generator 'sample' method."""
+        sample = self.generator.sample(n=nb_samples)
+        assert len(sample) == nb_samples
+        assert all(character in {0, 1} for s in sample for character in s)
+
+
+class TestSimpleGenerator(BaseTestGenerator):
+    """Test simple generator."""
+
+    def make_generator(self) -> Generator:
+        """Make a generator for testing."""
+        return SimpleGenerator(self.make_automaton())
+
+
+class TestMultiprocessedGenerator(BaseTestGenerator):
+    """Test multiprocessed generator."""
+
+    def make_generator(self) -> Generator:
+        """Make a generator for testing."""
+        return MultiprocessedGenerator(SimpleGenerator(self.make_automaton()))
 
 
 def test_multiprocess_generator_helper_function():
@@ -39,7 +70,7 @@ def test_multiprocess_generator_helper_function():
             }
         },
     )
-    sample = MultiprocessedGenerator._job(10, automaton.sample)
+    sample = MultiprocessedGenerator._job(10, SimpleGenerator(automaton).sample)
     assert len(sample) == 10
     assert all(character in {0, 1} for s in sample for character in s)
 
@@ -57,7 +88,7 @@ def test_learn_pdfa_1_state():
             }
         },
     )
-    generator = MultiprocessedGenerator(automaton, nb_processes=8)
+    generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
 
     pdfa = learn_pdfa(
         sample_generator=generator,
@@ -103,7 +134,7 @@ def test_learn_pdfa_2_states():
             },
         },
     )
-    generator = MultiprocessedGenerator(automaton, nb_processes=8)
+    generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
 
     pdfa = learn_pdfa(
         sample_generator=generator,

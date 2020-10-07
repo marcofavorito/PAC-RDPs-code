@@ -1,7 +1,7 @@
 """Helpers module of the PDFA package."""
 from typing import Set
 
-from src.helpers import assert_
+from src.helpers.base import assert_
 from src.pdfa.types import Character, State, TransitionFunctionDict, Word
 
 ROUND_PRECISION = 10
