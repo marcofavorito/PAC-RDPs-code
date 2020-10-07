@@ -56,7 +56,7 @@ class RotatingMAB(gym.Env):
 
     @property
     def nb_arms(self) -> int:
-        """The number of arms."""
+        """Get the number of arms."""
         return len(self.winning_probs)
 
     def _reward(self, action):
@@ -112,11 +112,13 @@ class NonMarkovianRotatingMAB(gym.Wrapper):
     """Non-Markovian Rotating MAB."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize the environment."""
         super().__init__(RotatingMAB(*args, **kwargs))
         self.observation_space = Discrete(2)
         self._last_reward = False
 
     def step(self, action):
+        """Do a step."""
         s, r, done, info = super().step(action)
         self._last_reward = r > 0.0
         return int(self._last_reward), r, done, info

@@ -44,12 +44,11 @@ def learn_probabilities(
     generator = params.sample_generator
     sample = generator.sample(N)
     n_observations: Counter = Counter()
-    q_visits: Counter = Counter()
     for word in sample:
         current_state = initial_state
         for character in word:
             # update statistics
-            q_visits.update([current_state])
+
             n_observations.update([(current_state, character)])
 
             # compute next state
@@ -62,6 +61,11 @@ def learn_probabilities(
             current_state = next_state
 
     gammas: Dict[int, Dict[int, float]] = {}
+
+    # compute number of times q is visited
+    q_visits: Counter = Counter()
+    for (q, _), counts in n_observations.items():
+        q_visits[q] += counts
     # compute mean
     for (q, sigma), counts in n_observations.items():
         gammas.setdefault(q, {})[sigma] = counts / q_visits[q]

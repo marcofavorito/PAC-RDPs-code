@@ -29,6 +29,7 @@ gym = "*"
 scipy = "*"
 graphviz = "*"
 jupyter = "*"
+pynput = "*"
 
 [requires]
 python_version = "3.7"

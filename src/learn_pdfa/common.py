@@ -5,21 +5,13 @@ from math import ceil
 from multiprocessing import Pool
 from typing import Callable, Optional, Sequence
 
-from src.helpers import assert_
+from src.helpers.base import assert_
 from src.pdfa import PDFA
 from src.pdfa.types import Word
 
 
 class Generator(ABC):
     """Wrapper to a PDFA to make sampling as a function call."""
-
-    def __init__(self, pdfa: PDFA):
-        """Initialize an abstract generator."""
-        self._pdfa = pdfa
-
-    def __call__(self):
-        """Sample a trace."""
-        return self._pdfa.sample()
 
     @abstractmethod
     def sample(self, n: int = 1) -> Sequence[Word]:
@@ -34,6 +26,14 @@ class Generator(ABC):
 class SimpleGenerator(Generator):
     """A simple sample generator."""
 
+    def __init__(self, pdfa: PDFA):
+        """Initialize an abstract generator."""
+        self._pdfa = pdfa
+
+    def __call__(self):
+        """Sample a trace."""
+        return self._pdfa.sample()
+
     def sample(self, n: int = 1) -> Sequence[Word]:
         """Generate a sample of size n."""
         return [self() for _ in range(n)]
@@ -42,20 +42,23 @@ class SimpleGenerator(Generator):
 class MultiprocessedGenerator(Generator):
     """Generate a sample, multiprocessed."""
 
-    def __init__(self, pdfa: PDFA, nb_processes: int = 4):
+    def __init__(self, generator: Generator, nb_processes: int = 4):
         """
         Generate a sample.
 
-        :param pdfa: the PDFA.
         :param nb_processes: the number of processes.
         """
-        super().__init__(pdfa)
+        self._generator = generator
         self._nb_processes = nb_processes
         self._pool = Pool(nb_processes)
 
+    def __call__(self):
+        """Sample a trace."""
+        return self._generator.sample()
+
     @staticmethod
-    def _job(n: int, sample_func: Callable):
-        return [sample_func() for _ in range(n)]
+    def _job(n: int, sample_func: Callable[[int], Sequence[Word]]):
+        return [sample_func(1)[0] for _ in range(n)]
 
     def sample(self, n: int = 1) -> Sequence[Word]:
         """Generate a sample, multiprocessed."""
@@ -63,7 +66,9 @@ class MultiprocessedGenerator(Generator):
         sample = []
 
         results = [
-            self._pool.apply_async(self._job, args=[n_per_process, self._pdfa.sample])
+            self._pool.apply_async(
+                self._job, args=[n_per_process, self._generator.sample]
+            )
             for _ in range(self._nb_processes)
         ]
         for r in results:

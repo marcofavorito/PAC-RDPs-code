@@ -8,6 +8,8 @@ from gym.spaces import Discrete
 
 class SequentialMAB(gym.Env):
     """
+    A variant of MAB.
+
     In this variant of MAB, the agent has to
     take action in a certain pattern in order
     to collect a reward.
@@ -25,7 +27,7 @@ class SequentialMAB(gym.Env):
         terminate_on_win: bool = True,
     ):
         """
-        Initialize a sequential MAB
+        Initialize a sequential MAB.
 
         :param nb_arms: the number of arms.
         :param pattern: the pattern to perform in order to give a reward.
@@ -51,13 +53,15 @@ class SequentialMAB(gym.Env):
         self.current_state = 0
 
     def render(self, mode="human"):
-        pass
+        """Render environment state."""
 
     def reset(self):
+        """Reset environment state."""
         self.current_state = 0
         return self.current_state
 
     def step(self, action):
+        """Do a step."""
         done = False
         if action == self.pattern[self.current_state]:
             # if the action is the next of the pattern,
@@ -85,11 +89,13 @@ class NonMarkovianSequentialMAB(gym.Wrapper):
     """Non-Markovian Sequential MAB."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize a non-Markovian sequential MAB."""
         super().__init__(SequentialMAB(*args, **kwargs))
         self.observation_space = Discrete(1)
         self._last_reward = False
 
     def step(self, action):
+        """Do a step."""
         s, r, done, info = super().step(action)
         self._last_reward = r > 0.0
         return 0, r, done, info

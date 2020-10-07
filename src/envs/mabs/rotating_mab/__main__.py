@@ -17,6 +17,7 @@ from src.envs.mabs.rotating_mab import RotatingMAB
 
 
 def parse_args():
+    """Parse arguments."""
     parser = argparse.ArgumentParser(
         "rotating_mab", description="Play the RotMAB game. Commands: Left/Right."
     )
@@ -36,6 +37,7 @@ def _print_arguments(arguments):
 
 
 def main():
+    """Play with the rotating MAB interactively."""
     # we put imports here due to problems while testing:
     # https://github.com/moses-palmer/pynput/issues/6
     import pynput
