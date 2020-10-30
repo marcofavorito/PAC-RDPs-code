@@ -1,4 +1,5 @@
 """Helpers module of the PDFA package."""
+from copy import deepcopy, copy
 from typing import Set
 
 from src.helpers.base import assert_
@@ -35,7 +36,7 @@ def _check_ergodicity(
     current: Set[State] = set()
     next_ = {final_state}
     while current != next_:
-        current = next_
+        current = copy(next_)
 
         for start, out_transitions in transitions.items():
             for _char, (end, probability) in out_transitions.items():

@@ -80,7 +80,7 @@ class MultiprocessedGenerator(Generator):
 
 
 @dataclass(frozen=True)
-class _Params:
+class Params:
     """
     Parameters for the learning algorithm.
 

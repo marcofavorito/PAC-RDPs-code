@@ -6,12 +6,12 @@ from math import ceil, log
 from typing import Dict, Optional, Set, Tuple
 
 from src.learn_pdfa import logger
-from src.learn_pdfa.common import _Params
+from src.learn_pdfa.common import Params
 from src.pdfa import PDFA
 from src.pdfa.types import TransitionFunctionDict
 
 
-def _sample_size(params: _Params) -> int:
+def _sample_size(params: Params) -> int:
     eps = params.epsilon
     s = params.alphabet_size
     n = params.n
@@ -25,7 +25,7 @@ def _sample_size(params: _Params) -> int:
 
 
 def learn_probabilities(
-    graph: Tuple[Set[int], Dict[int, Dict[int, int]]], params: _Params
+    graph: Tuple[Set[int], Dict[int, Dict[int, int]]], params: Params
 ) -> PDFA:
     """
     Learn the probabilities of the PDFA.
