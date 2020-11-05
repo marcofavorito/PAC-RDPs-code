@@ -5,11 +5,11 @@ from math import ceil, log, log2
 from typing import Dict, Optional, Sequence, Set, Tuple
 
 from src.learn_pdfa import logger
-from src.learn_pdfa.common import Params
+from src.learn_pdfa.palmer.params import PalmerParams
 from src.pdfa.types import Character, State, Word
 
 
-def _compute_m0(params: Params):
+def _compute_m0(params: PalmerParams):
     """Compute m0."""
     mu = params.mu
     delta_1 = params.delta_1
@@ -18,7 +18,7 @@ def _compute_m0(params: Params):
     return ceil((16 / mu) ** 2 * (log2(16 / delta_1 / mu) + log2(n * s) + n * s))
 
 
-def _compute_N(params: Params, m0: int):
+def _compute_N(params: PalmerParams, m0: int):
     """Compute N."""
     eps = params.epsilon
     delta = params.delta_1
@@ -104,7 +104,7 @@ def _rename_final_state(
 
 
 def learn_subgraph(  # noqa: ignore
-    params: Params,
+    params: PalmerParams,
 ) -> Tuple[Set[int], Dict[int, Dict[Character, int]]]:
     """
     Learn a subgraph of the true PDFA.

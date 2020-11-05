@@ -1,11 +1,9 @@
 """Common utilities for the learning PDFA algorithm."""
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from math import ceil
 from multiprocessing import Pool
-from typing import Callable, Optional, Sequence
+from typing import Callable, Sequence
 
-from src.helpers.base import assert_
 from src.pdfa import PDFA
 from src.pdfa.types import Word
 
@@ -77,36 +75,3 @@ class MultiprocessedGenerator(Generator):
 
         nb_samples_to_drop = len(sample) - n
         return sample[: len(sample) - nb_samples_to_drop]
-
-
-@dataclass(frozen=True)
-class Params:
-    """
-    Parameters for the learning algorithm.
-
-    sample_generator: the sample generator from the true PDFA.
-    alphabet_size: the alphabet size.
-    epsilon: the tolerance error.
-    delta: the failure probability for the subgraph construction.
-    delta: the failure probability for the probability estimation.
-    mu: the distinguishability factor.
-    n: the upper bound of the number of states.
-    """
-
-    sample_generator: Generator
-    alphabet_size: int
-    epsilon: float = 0.05
-    delta_1: float = 0.1
-    delta_2: float = 0.1
-    mu: float = 0.4
-    n: int = 3
-    # debug parameters - force upper bounds
-    m0_max_debug: Optional[int] = None
-    n1_max_debug: Optional[int] = None
-    n2_max_debug: Optional[int] = None
-
-    def __post_init__(self):
-        assert_(
-            self.delta_1 + self.delta_2 <= 1.0,
-            "Sum of two probabilities cannot be greater than 1.",
-        )

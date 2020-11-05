@@ -1,5 +1,5 @@
 """Helpers module of the PDFA package."""
-from copy import deepcopy, copy
+from copy import copy
 from typing import Set
 
 from src.helpers.base import assert_

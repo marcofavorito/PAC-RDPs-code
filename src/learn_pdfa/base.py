@@ -1,23 +1,28 @@
 """Base module for the learn pdfa implementation."""
-import pprint
+from enum import Enum
+from typing import Callable, Dict
 
-from src.learn_pdfa import logger
-from src.learn_pdfa.common import Params
-from src.learn_pdfa.learn_probabilities import learn_probabilities
-from src.learn_pdfa.learn_subgraph import learn_subgraph
+from src.learn_pdfa.palmer.core import learn_pdfa as palmer_learn_pdfa
 
 
-def learn_pdfa(**kwargs):
+class Algorithm(Enum):
+    """Enumeration of supported PAC learning algorithms for PDFAs."""
+
+    PALMER = "palmer"
+    BALLE = "balle"
+
+
+_algorithm_to_function: Dict[Algorithm, Callable] = {
+    Algorithm.PALMER: palmer_learn_pdfa,
+    Algorithm.BALLE: palmer_learn_pdfa,
+}
+
+
+def learn_pdfa(algorithm: Algorithm = Algorithm.PALMER, **kwargs):
     """
     PAC-learn a PDFA.
 
-    :param kwargs: the keyword arguments of the algorithm (see the Params class).
+    :param kwargs: the keyword arguments of the algorithm.
     :return: the learnt PDFA.
     """
-    params = Params(**kwargs)
-    logger.info(f"Parameters: {pprint.pformat(str(params))}")
-    vertices, transitions = learn_subgraph(params)
-    logger.info(f"Number of vertices: {len(vertices)}.")
-    logger.info(f"Transitions: {pprint.pformat(transitions)}.")
-    pdfa = learn_probabilities((vertices, transitions), params)
-    return pdfa
+    return _algorithm_to_function[algorithm](**kwargs)

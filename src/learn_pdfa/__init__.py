@@ -7,6 +7,7 @@ Package that contains the implementation of [1].
       In: Jain S., Simon H.U., Tomita E. (eds) Algorithmic Learning Theory. ALT 2005.
       Lecture Notes in Computer Science, vol 3734. Springer, Berlin, Heidelberg.
       https://doi.org/10.1007/11564089_14
+
 """
 import logging
 

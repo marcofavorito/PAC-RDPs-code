@@ -45,8 +45,8 @@ clean-pyc: ## remove Python file artifacts
 	find . -name '__pycache__' -exec rm -fr {} +
 
 clean-docs:  ## remove MkDocs products.
-	mkdocs build --clean
-	rm -fr site/
+	-mkdocs build --clean
+	-rm -fr site/
 
 
 clean-test: ## remove test and coverage artifacts
