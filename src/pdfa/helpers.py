@@ -66,7 +66,7 @@ def _check_is_legal_state_or_final(state: State, nb_states: int) -> None:
 def _check_is_legal_character(character: Character, alphabet_size) -> None:
     """Check that a character is in the alphabet."""
     assert_(
-        0 <= character < alphabet_size, "Provided character is not in the alphabet."
+        0 <= character < alphabet_size or character == -1, "Provided character is not in the alphabet."
     )
 
 
