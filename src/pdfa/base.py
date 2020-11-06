@@ -24,7 +24,7 @@ class PDFA:
     - The set of states is the set of integers {0, ..., nb_states - 1} (nb_states > 0)
     - The alphabet is the set of integers {0, ..., alphabet_size - 1}
     - The initial state is always 0
-    - The final state is always "nb_states"
+    - The final state is always -1
     - The transition function is a nested dictionary:
         - at the first level, we have states as keys and the dict of outgoing transition_dict as values
         - a dict of outgoing transition_dict has characters as keys and a tuple of next state and probability
@@ -94,7 +94,7 @@ class PDFA:
     @property
     def final_state(self) -> State:
         """Get the final state."""
-        return self.nb_states
+        return -1
 
     @property
     def states(self) -> Set[State]:

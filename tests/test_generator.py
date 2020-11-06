@@ -18,7 +18,7 @@ class BaseTestGenerator:
             {
                 0: {
                     0: (0, 0.5),
-                    1: (1, 1 - 0.5),
+                    1: (-1, 1 - 0.5),
                 }
             },
         )
@@ -64,7 +64,7 @@ def test_multiprocess_generator_helper_function():
         {
             0: {
                 0: (0, 0.5),
-                1: (1, 1 - 0.5),
+                1: (-1, 1 - 0.5),
             }
         },
     )

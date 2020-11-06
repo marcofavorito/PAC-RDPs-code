@@ -58,7 +58,7 @@ def _check_is_legal_state(state: State, nb_states: int) -> None:
 def _check_is_legal_state_or_final(state: State, nb_states: int) -> None:
     """Check that a state is legal, including final states."""
     assert_(
-        0 <= state <= nb_states,
+        0 <= state < nb_states or state == -1,
         "Provided state is not in the set of states, nor is a final state.",
     )
 

@@ -84,8 +84,6 @@ def learn_probabilities(
             prob = gammas.get(q, {}).get(sigma, 0.0)
             transition_dict[q][sigma] = (q_prime, prob)
 
-    logger.info("Removing final state from the set of vertices.")
-    vertices.remove(len(vertices) - 1)
     logger.info(f"Computed vertices: {pprint.pformat(vertices)}")
     logger.info(f"Computed transition dictionary: {pprint.pformat(transition_dict)}")
 

@@ -15,10 +15,10 @@ def test_learn_pdfa_state():
         {
             0: {
                 0: (1, p1),
-                1: (2, 1 - p1),
+                1: (-1, 1 - p1),
             },
             1: {
-                0: (2, 1 - p2),
+                0: (-1, 1 - p2),
                 1: (1, p2),
             },
         },
@@ -30,8 +30,8 @@ def test_learn_pdfa_state():
         nb_samples=10000,
         sample_generator=generator,
         alphabet_size=2,
-        delta=0.1,
+        delta=0.01,
         n=10,
     )
-    # TODO
+
     assert len(v) == 3

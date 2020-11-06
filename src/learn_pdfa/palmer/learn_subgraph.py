@@ -1,6 +1,7 @@
 """Implement the Algorithm 1 of (Palmer and Goldberg 2007) to learn subgraph."""
 import pprint
 from collections import Counter
+from copy import deepcopy
 from math import ceil, log, log2
 from typing import Dict, Optional, Sequence, Set, Tuple
 
@@ -74,21 +75,29 @@ def _rename_final_state(
     :param final_node: the final node.
     :return: None
     """
-    if final_node != len(vertices) - 1:
-        node_to_rename = len(vertices) - 1
-        new_final_node = len(vertices) - 1
-        new_node_name = final_node
-        logger.info(
-            f"Renaming node {node_to_rename} with {new_node_name} (final node: {new_final_node})."
-        )
-        node_transitions = transition_dict.pop(node_to_rename)
-        transition_dict[new_node_name] = node_transitions
-        for _, out_transitions in transition_dict.items():
-            for character, next_state in out_transitions.items():
-                if next_state == node_to_rename:
-                    out_transitions[character] = new_node_name
-                elif next_state == final_node:
-                    out_transitions[character] = new_final_node
+    new_final_node = -1
+    old_final_node = final_node
+    nodes_to_rename = {
+        len(vertices) - 1: old_final_node,
+        old_final_node: new_final_node,
+    }
+    logger.info(f"Renaming nodes: {nodes_to_rename} (final node: {new_final_node}).")
+
+    for key in nodes_to_rename:
+        vertices.remove(key)
+    for value in nodes_to_rename.values():
+        if value != new_final_node:
+            vertices.add(value)
+
+    old_transition_dict = deepcopy(transition_dict)
+    for state, out_transitions in old_transition_dict.items():
+        for character, next_state in out_transitions.items():
+            if next_state in nodes_to_rename:
+                transition_dict[state][character] = nodes_to_rename[next_state]
+
+        if state in nodes_to_rename:
+            node_transitions = transition_dict.pop(state)
+            transition_dict[nodes_to_rename[state]] = node_transitions
 
 
 def learn_subgraph(  # noqa: ignore

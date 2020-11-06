@@ -5,6 +5,8 @@ import sys
 import tempfile
 from contextlib import contextmanager
 
+import pytest
+
 
 @contextmanager
 def tempdir():
@@ -17,3 +19,9 @@ def tempdir():
             shutil.rmtree(path)
         except IOError:
             sys.stderr.write("Failed to clean up temp dir {}".format(path))
+
+
+@pytest.fixture(params=["pdfa_one_state"])
+def pdfas(request):
+    """Get a list of PDFAs."""
+    return request.getfuncargvalue(request.param)
