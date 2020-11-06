@@ -5,7 +5,7 @@ from src.learn_pdfa.common import MultiprocessedGenerator, SimpleGenerator
 from src.pdfa import PDFA
 
 
-def test_learn_pdfa_1_state():
+def test_learn_pdfa_state():
     """Test the PDFA learning, 1 state."""
     p1 = 0.4
     p2 = 0.7
