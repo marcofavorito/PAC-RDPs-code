@@ -53,7 +53,7 @@ def test_learn_pdfa_two_state(pdfa_two_states):
     ],
     indirect=True,
 )
-def test_learn_pdfa_three_states(pdfa_sequence_three_states):
+def test_learn_pdfa_sequence_three_states(pdfa_sequence_three_states):
     """
     Test the PDFA learning, with the "ring" PDFA, 3 states.
 
