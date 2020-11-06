@@ -2,6 +2,7 @@
 from enum import Enum
 from typing import Callable, Dict
 
+from src.learn_pdfa.balle.core import learn_pdfa as balle_learn_pdfa
 from src.learn_pdfa.palmer.core import learn_pdfa as palmer_learn_pdfa
 
 
@@ -14,7 +15,7 @@ class Algorithm(Enum):
 
 _algorithm_to_function: Dict[Algorithm, Callable] = {
     Algorithm.PALMER: palmer_learn_pdfa,
-    Algorithm.BALLE: palmer_learn_pdfa,
+    Algorithm.BALLE: balle_learn_pdfa,
 }
 
 

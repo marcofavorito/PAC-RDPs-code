@@ -5,6 +5,7 @@ from math import ceil, log, log2
 from typing import Dict, Optional, Sequence, Set, Tuple
 
 from src.learn_pdfa import logger
+from src.learn_pdfa.common import l_infty_norm
 from src.learn_pdfa.palmer.params import PalmerParams
 from src.pdfa.types import Character, State, Word
 
@@ -30,19 +31,6 @@ def _compute_N(params: PalmerParams, m0: int):
     N = ceil(max(N1, N2))
     logger.info(f"N1 = {N1}, N2 = {N2}. Chosen: {N}")
     return N
-
-
-def _l_infty_norm(multiset1: Counter, multiset2: Counter):
-    current_max = 0.0
-    card1 = sum(multiset1.values())
-    card2 = sum(multiset2.values())
-    assert card1 > 0, "Cardinality of multiset shouldn't be zero."
-    assert card2 > 0, "Cardinality of multiset shouldn't be zero."
-    all_strings = set(multiset1).union(multiset2)
-    for string in all_strings:
-        norm = abs(multiset1[string] / card1 - multiset2[string] / card2)
-        current_max = norm if norm > current_max else current_max
-    return current_max
 
 
 def extended_transition_fun(
@@ -178,7 +166,7 @@ def learn_subgraph(  # noqa: ignore
             similar_vertex: Optional[int] = None
             for v in vertices:
                 vertex_multiset = vertex2multiset[v]
-                norm = _l_infty_norm(biggest_multiset, vertex_multiset)
+                norm = l_infty_norm(biggest_multiset, vertex_multiset)
                 if norm <= mu / 2.0:
                     similar_vertex = v
                     break
