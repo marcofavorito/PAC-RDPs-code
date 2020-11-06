@@ -15,6 +15,8 @@ from src.pdfa.helpers import (
 )
 from src.pdfa.types import Character, State, TransitionFunctionDict, Word
 
+FINAL_STATE = -1
+
 
 @dataclass(frozen=True)
 class PDFA:
@@ -94,7 +96,7 @@ class PDFA:
     @property
     def final_state(self) -> State:
         """Get the final state."""
-        return -1
+        return FINAL_STATE
 
     @property
     def states(self) -> Set[State]:

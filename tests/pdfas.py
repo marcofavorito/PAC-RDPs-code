@@ -2,6 +2,7 @@
 import pytest
 
 from src.pdfa import PDFA
+from src.pdfa.base import FINAL_STATE
 
 
 @pytest.fixture
@@ -14,7 +15,7 @@ def pdfa_one_state():
         {
             0: {
                 0: (0, p),
-                1: (1, 1 - p),
+                1: (FINAL_STATE, 1 - p),
             }
         },
     )
@@ -24,15 +25,20 @@ def pdfa_one_state():
 @pytest.fixture
 def pdfa_two_states():
     """Get a PDFA with two states."""
-    p = 0.3
+    p1 = 0.4
+    p2 = 0.7
     automaton = PDFA(
-        1,
+        2,
         2,
         {
             0: {
-                0: (0, p),
-                1: (1, 1 - p),
-            }
+                0: (1, p1),
+                1: (FINAL_STATE, 1 - p1),
+            },
+            1: {
+                0: (FINAL_STATE, 1 - p2),
+                1: (1, p2),
+            },
         },
     )
     return automaton

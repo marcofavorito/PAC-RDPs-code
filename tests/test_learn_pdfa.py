@@ -7,6 +7,7 @@ import pytest
 from src.learn_pdfa.base import learn_pdfa
 from src.learn_pdfa.common import Generator, MultiprocessedGenerator, SimpleGenerator
 from src.pdfa import PDFA
+from src.pdfa.base import FINAL_STATE
 
 
 class BaseTestGenerator:
@@ -20,7 +21,7 @@ class BaseTestGenerator:
             {
                 0: {
                     0: (0, 0.5),
-                    1: (-1, 1 - 0.5),
+                    1: (FINAL_STATE, 1 - 0.5),
                 }
             },
         )
@@ -66,7 +67,7 @@ def test_multiprocess_generator_helper_function():
         {
             0: {
                 0: (0, 0.5),
-                1: (-1, 1 - 0.5),
+                1: (FINAL_STATE, 1 - 0.5),
             }
         },
     )
@@ -75,19 +76,10 @@ def test_multiprocess_generator_helper_function():
     assert all(character in {0, 1} for s in sample for character in s)
 
 
-def test_learn_pdfa_1_state():
+def test_learn_pdfa_1_state(pdfa_one_state):
     """Test the PDFA learning, 1 state."""
-    p = 0.3
-    automaton = PDFA(
-        1,
-        2,
-        {
-            0: {
-                0: (0, p),
-                1: (-1, 1 - p),
-            }
-        },
-    )
+    automaton = pdfa_one_state
+    expected_p = 0.3
     generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
 
     pdfa = learn_pdfa(
@@ -108,32 +100,19 @@ def test_learn_pdfa_1_state():
     # reading symbol 0
     dest_state, prob = transitions_from_initial_state[0]
     assert dest_state == 0
-    assert np.isclose(prob, p, rtol=0.1)
+    assert np.isclose(prob, expected_p, rtol=0.1)
 
     # reading symbol 1
     dest_state, prob = transitions_from_initial_state[1]
     assert dest_state == pdfa.final_state
-    assert np.isclose(prob, 1 - p, rtol=0.1)
+    assert np.isclose(prob, 1 - expected_p, rtol=0.1)
 
 
-def test_learn_pdfa_2_states():
+def test_learn_pdfa_2_states(pdfa_two_states):
     """Test the PDFA learn example with 2 states."""
-    p1 = 0.4
-    p2 = 0.7
-    automaton = PDFA(
-        2,
-        2,
-        {
-            0: {
-                0: (1, p1),
-                1: (-1, 1 - p1),
-            },
-            1: {
-                0: (-1, 1 - p2),
-                1: (1, p2),
-            },
-        },
-    )
+    automaton = pdfa_two_states
+    expected_p1 = 0.4
+    expected_p2 = 0.7
     generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
 
     pdfa = learn_pdfa(
@@ -156,19 +135,19 @@ def test_learn_pdfa_2_states():
     # reading symbol 0
     dest_state, prob = transitions_from_initial_state[0]
     assert dest_state == 1
-    assert np.isclose(prob, p1, rtol=0.1)
+    assert np.isclose(prob, expected_p1, rtol=0.1)
     # reading symbol 1
     dest_state, prob = transitions_from_initial_state[1]
     assert dest_state == pdfa.final_state
-    assert np.isclose(prob, 1 - p1, rtol=0.1)
+    assert np.isclose(prob, 1 - expected_p1, rtol=0.1)
 
     # test transitions from second state
     transitions_from_second_state = pdfa.transition_dict[1]
     # reading symbol 0
     dest_state, prob = transitions_from_second_state[0]
     assert dest_state == pdfa.final_state
-    assert np.isclose(prob, 1 - p2, rtol=0.1)
+    assert np.isclose(prob, 1 - expected_p2, rtol=0.1)
     # reading symbol 1
     dest_state, prob = transitions_from_second_state[1]
     assert dest_state == 1
-    assert np.isclose(prob, p2, rtol=0.1)
+    assert np.isclose(prob, expected_p2, rtol=0.1)

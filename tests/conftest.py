@@ -7,6 +7,9 @@ from contextlib import contextmanager
 
 import pytest
 
+# this is to import fixtures
+from tests.pdfas import pdfa_one_state, pdfa_two_states  # noqa: E402, F401
+
 
 @contextmanager
 def tempdir():

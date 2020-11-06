@@ -5,6 +5,7 @@ import pytest
 
 from src.learn_pdfa.common import Generator, MultiprocessedGenerator, SimpleGenerator
 from src.pdfa import PDFA
+from src.pdfa.base import FINAL_STATE
 
 
 class BaseTestGenerator:
@@ -18,7 +19,7 @@ class BaseTestGenerator:
             {
                 0: {
                     0: (0, 0.5),
-                    1: (-1, 1 - 0.5),
+                    1: (FINAL_STATE, 1 - 0.5),
                 }
             },
         )
@@ -64,7 +65,7 @@ def test_multiprocess_generator_helper_function():
         {
             0: {
                 0: (0, 0.5),
-                1: (-1, 1 - 0.5),
+                1: (FINAL_STATE, 1 - 0.5),
             }
         },
     )

@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from src.pdfa import PDFA
+from src.pdfa.base import FINAL_STATE
 from src.pdfa.render import to_graphviz
 from tests.conftest import tempdir
 
@@ -12,7 +13,12 @@ from tests.conftest import tempdir
 def test_pdfa_example():
     """Test the PDFA class with a simple instantiation."""
     automaton = PDFA(
-        2, 2, {0: {0: (-1, 0.1), 1: (1, 0.9)}, 1: {0: (1, 0.1), 1: (-1, 0.9)}}
+        2,
+        2,
+        {
+            0: {0: (FINAL_STATE, 0.1), 1: (1, 0.9)},
+            1: {0: (1, 0.1), 1: (FINAL_STATE, 0.9)},
+        },
     )
 
     with tempdir() as tmp:
@@ -38,7 +44,7 @@ def test_alphabet_size_zero():
 def test_not_a_probability():
     """Test not a probability."""
     with pytest.raises(AssertionError, match="'42.0' is not a probability."):
-        PDFA(1, 1, {0: {0: (-1, 42.0)}})
+        PDFA(1, 1, {0: {0: (FINAL_STATE, 42.0)}})
 
 
 def test_sum_outgoing_transitions_probabilities_greater_than_one():
@@ -52,7 +58,7 @@ def test_sum_outgoing_transitions_probabilities_greater_than_one():
             {
                 0: {
                     0: (0, 0.999),
-                    1: (-1, 0.999),
+                    1: (FINAL_STATE, 0.999),
                 }
             },
         )
@@ -87,7 +93,7 @@ def test_wrong_character():
             {
                 0: {
                     42: (0, 0.5),
-                    1: (-1, 0.5),
+                    1: (FINAL_STATE, 0.5),
                 }
             },
         )
@@ -101,12 +107,12 @@ def test_successor():
         {
             0: {
                 0: (0, 0.5),
-                1: (-1, 0.5),
+                1: (FINAL_STATE, 0.5),
             }
         },
     )
     assert automaton.get_successor(0, 0) == 0
-    assert automaton.get_successor(0, 1) == -1
+    assert automaton.get_successor(0, 1) == FINAL_STATE
 
 
 def test_successors():
@@ -117,7 +123,7 @@ def test_successors():
         {
             0: {
                 0: (0, 0.5),
-                1: (-1, 0.5),
+                1: (FINAL_STATE, 0.5),
             }
         },
     )
@@ -132,14 +138,14 @@ def test_transitions():
         {
             0: {
                 0: (0, 0.5),
-                1: (-1, 0.5),
+                1: (FINAL_STATE, 0.5),
             }
         },
     )
 
     expected_transitions = {
         (0, 0, 0.5, 0),
-        (0, 1, 0.5, -1),
+        (0, 1, 0.5, FINAL_STATE),
     }
     actual_transitions = automaton.transitions
     assert expected_transitions == actual_transitions
@@ -153,7 +159,7 @@ def test_probability():
         {
             0: {
                 0: (0, 0.5),
-                1: (-1, 0.5),
+                1: (FINAL_STATE, 0.5),
             }
         },
     )
@@ -183,7 +189,7 @@ def test_sample():
         {
             0: {
                 0: (0, p),
-                1: (-1, 1 - p),
+                1: (FINAL_STATE, 1 - p),
             }
         },
     )

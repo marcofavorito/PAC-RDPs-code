@@ -2,27 +2,11 @@
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.common import MultiprocessedGenerator, SimpleGenerator
-from src.pdfa import PDFA
 
 
-def test_learn_pdfa_state():
+def test_learn_pdfa_state(pdfa_two_states):
     """Test the PDFA learning, 1 state."""
-    p1 = 0.4
-    p2 = 0.7
-    automaton = PDFA(
-        2,
-        2,
-        {
-            0: {
-                0: (1, p1),
-                1: (-1, 1 - p1),
-            },
-            1: {
-                0: (-1, 1 - p2),
-                1: (1, p2),
-            },
-        },
-    )
+    automaton = pdfa_two_states
     generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
 
     v, t = learn_pdfa(
