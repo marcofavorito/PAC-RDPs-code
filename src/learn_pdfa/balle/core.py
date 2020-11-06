@@ -152,15 +152,17 @@ def learn_subgraph(  # noqa: ignore
             if not is_distinct:
                 non_distinct_vertices.add(v)
 
-        if len(non_distinct_vertices) == 0:
+        all_nodes_are_distinct = len(non_distinct_vertices) == 0
+        maximum_nb_states_reached = len(vertices) == params.n
+        if all_nodes_are_distinct and not maximum_nb_states_reached:
             # we've got a new node
             new_vertex = len(vertices)
             vertices.add(new_vertex)
             vertex2multiset[new_vertex] = biggest_multiset
             transitions.setdefault(start_state, {})[character] = new_vertex
         else:
-            # pick a safe node that has not distinguished from best candidate
-            # for deterministic behaviour, pick the smallest
+            # pick a safe node that has not distinguished from best candidate.
+            # For deterministic behaviour, pick the smallest
             old_vertex = sorted(non_distinct_vertices)[0]
             transitions.setdefault(start_state, {})[character] = old_vertex
 

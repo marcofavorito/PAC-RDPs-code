@@ -9,7 +9,6 @@ from gym.wrappers import TimeLimit
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.common import MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, random_exploration_policy
-from src.pdfa.render import to_graphviz_from_graph
 from src.pdfa.types import Character
 
 
@@ -62,6 +61,3 @@ def test_learning_rotating_mab():
         n_upperbound=10,
         nb_processes=8,
     )
-    to_graphviz_from_graph(
-        v, t, char2str=lambda c: str(rdp_generator.decoder(c))
-    ).render("rotmab")
