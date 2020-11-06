@@ -84,7 +84,7 @@ def test_learn_pdfa_1_state(pdfa_one_state):
 
     pdfa = learn_pdfa(
         sample_generator=generator,
-        alphabet_size=2,
+        alphabet_size=automaton.alphabet_size,
         epsilon=0.4,
         delta_1=0.2,
         delta_2=0.2,
@@ -117,7 +117,7 @@ def test_learn_pdfa_2_states(pdfa_two_states):
 
     pdfa = learn_pdfa(
         sample_generator=generator,
-        alphabet_size=2,
+        alphabet_size=automaton.alphabet_size,
         epsilon=0.4,
         delta_1=0.2,
         delta_2=0.2,

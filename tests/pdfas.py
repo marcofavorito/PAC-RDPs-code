@@ -42,3 +42,34 @@ def pdfa_two_states():
         },
     )
     return automaton
+
+
+@pytest.fixture
+def pdfa_sequence_three_states(request):
+    """Get a PDFA with two states."""
+    p1, p2, p3, stop_probability = request.param
+    automaton = PDFA(
+        3,
+        4,
+        {
+            0: {
+                0: (1, p1),
+                1: (0, p2),
+                2: (0, p3),
+                3: (FINAL_STATE, stop_probability),
+            },
+            1: {
+                0: (0, p1),
+                1: (2, p2),
+                2: (0, p3),
+                3: (FINAL_STATE, stop_probability),
+            },
+            2: {
+                0: (0, p1),
+                1: (0, p2),
+                2: (FINAL_STATE, p3),
+                3: (FINAL_STATE, stop_probability),
+            },
+        },
+    )
+    return automaton
