@@ -31,7 +31,7 @@ def test_learn_pdfa_state():
         sample_generator=generator,
         alphabet_size=2,
         delta=0.1,
-        n=3,
+        n=10,
     )
     # TODO
     assert len(v) == 3

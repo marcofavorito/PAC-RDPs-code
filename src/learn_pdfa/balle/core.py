@@ -22,6 +22,7 @@ def learn_pdfa(**kwargs) -> PDFA:
     params = BalleParams(**kwargs)
     logger.info(f"Parameters: {pprint.pformat(str(params))}")
     vertices, transitions = learn_subgraph(params)
+    # TODO do the part of learning probabilities
     return vertices, transitions  # type: ignore
 
 
