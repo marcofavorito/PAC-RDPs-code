@@ -61,3 +61,4 @@ def test_learning_rotating_mab():
         n_upperbound=10,
         nb_processes=8,
     )
+    assert len(v) == 2
