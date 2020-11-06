@@ -87,7 +87,6 @@ def learn_subgraph(  # noqa: ignore
     :return: the graph
     """
     generator = params.sample_generator
-    N = 100000
     # initialize variables
     initial_state = 0
     vertices = {initial_state}
@@ -99,7 +98,7 @@ def learn_subgraph(  # noqa: ignore
     iteration_upper_bound = params.n * params.alphabet_size
 
     # generate sample
-    samples = generator.sample(n=N)
+    samples = generator.sample(n=params.nb_samples)
     samples = list(map(lambda x: tuple(x), samples))
 
     # attach the entire sample as a multiset ot the initial state.
