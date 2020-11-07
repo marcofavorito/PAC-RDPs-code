@@ -61,7 +61,7 @@ def test_multiset(multiset_class):
         max_size=1000,
     )
 )
-@settings(max_examples=5000)
+@settings(max_examples=1000)
 def test_naive_multiset_and_prefix_based_multiset_equivalent(samples):
     """Test equivalence between two multiset implementations."""
     multiset_1 = NaiveMultiset()
