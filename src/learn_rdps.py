@@ -5,7 +5,7 @@ from typing import Callable, Sequence
 import gym
 import numpy as np
 
-from src.learn_pdfa.common import Generator
+from src.learn_pdfa.utils.generator import Generator
 from src.pdfa.types import Word
 
 

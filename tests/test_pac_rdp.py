@@ -7,7 +7,7 @@ import numpy as np
 from gym.wrappers import TimeLimit
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
-from src.learn_pdfa.common import MultiprocessedGenerator
+from src.learn_pdfa.utils.generator import MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, random_exploration_policy
 from src.pdfa.types import Character
 

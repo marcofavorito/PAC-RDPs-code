@@ -3,7 +3,11 @@ from abc import abstractmethod
 
 import pytest
 
-from src.learn_pdfa.common import Generator, MultiprocessedGenerator, SimpleGenerator
+from src.learn_pdfa.utils.generator import (
+    Generator,
+    MultiprocessedGenerator,
+    SimpleGenerator,
+)
 from src.pdfa import PDFA
 from src.pdfa.base import FINAL_STATE
 

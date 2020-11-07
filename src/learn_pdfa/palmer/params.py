@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.helpers.base import assert_
-from src.learn_pdfa.common import Generator
+from src.learn_pdfa.utils.generator import Generator
 
 
 @dataclass(frozen=True)

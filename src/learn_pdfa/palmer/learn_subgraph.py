@@ -6,8 +6,8 @@ from math import ceil, log, log2
 from typing import Dict, Optional, Sequence, Set, Tuple
 
 from src.learn_pdfa import logger
-from src.learn_pdfa.common import l_infty_norm
 from src.learn_pdfa.palmer.params import PalmerParams
+from src.learn_pdfa.utils.base import l_infty_norm
 from src.pdfa.types import Character, State, Word
 
 

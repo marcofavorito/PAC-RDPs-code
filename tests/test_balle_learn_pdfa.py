@@ -2,7 +2,7 @@
 import pytest
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
-from src.learn_pdfa.common import MultiprocessedGenerator, SimpleGenerator
+from src.learn_pdfa.utils.generator import MultiprocessedGenerator, SimpleGenerator
 
 
 def test_learn_pdfa_one_state(pdfa_one_state):

@@ -21,6 +21,7 @@ bandit = "*"
 safety = "*"
 jupyter = "*"
 mkdocs = "*"
+hypothesis = "*"
 
 [packages]
 numpy = "*"
@@ -30,6 +31,7 @@ scipy = "*"
 graphviz = "*"
 jupyter = "*"
 pynput = "*"
+hypothesis = "*"
 
 [requires]
 python_version = "3.7"
