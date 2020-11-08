@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass
-from typing import Collection, Dict, Iterable, Optional, Sequence, Set, Tuple
+from typing import Collection, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from src.pdfa.types import Character, Word
 
@@ -13,6 +13,9 @@ class _TreeMetadata:
 
     size: int = 0
     alphabet_size: int = 0
+
+    def __hash__(self):
+        return id(self)
 
 
 def prefixes(t: Word) -> Iterable:
@@ -148,7 +151,7 @@ class Node:
 
     def __hash__(self) -> int:
         """Get hash."""
-        return hash((Node, self.index))
+        return hash((Node, self.index, self._tree_metadata))
 
 
 class Multiset(ABC):
@@ -290,16 +293,17 @@ class PrefixTreeMultiset(Multiset):
         """Get the probability of a trace."""
         if self._node.children_counts == 0:
             return 0.0
-        return self._node.get_counts(t) / self._node.children_counts
+        return self._node.get_counts(t) / self.size
 
     def get_prefix_probability(self, t: Word) -> float:
         """Get the prefix-probability of a trace."""
         if self._node.children_counts == 0:
             return 0.0
         final_node: Optional[Node] = self._node.get_end_node(t)
-        if final_node is not None:
-            return final_node.children_counts / self._node.children_counts
-        return 0.0
+        if final_node is None:
+            # never seen this prefix.
+            return 0.0
+        return final_node.children_counts / self.size
 
     @property
     def traces(self) -> Set[Word]:
@@ -309,3 +313,55 @@ class PrefixTreeMultiset(Multiset):
     def items(self) -> Set[Tuple[Word, int]]:
         """Get the traces and their counts."""
         return self._node.items()
+
+
+class ReadOnlyPrefixTreeMultiset(Multiset):
+    """Readonly multiset."""
+
+    def __init__(self, nodes: Optional[Set[Node]] = None):
+        """
+        Initialize a Multiset prefix-tree based.
+
+        :param nodes: the nodes of the tree from where to start.
+        """
+        self._nodes = nodes if nodes is not None else {Node(parent=None)}
+
+    def get_counts(self, trace: Word) -> int:
+        """Get counts."""
+        return sum(n.get_counts(trace) for n in self._nodes)
+
+    def add(self, t: Word, times: int = 1) -> None:
+        """Add an element."""
+        raise ValueError("Read-only.")
+
+    @property
+    def size(self) -> int:
+        """Get the size."""
+        return sum(n.children_counts for n in self._nodes)
+
+    def get_probability(self, t: Word) -> float:
+        """Get the probability of a trace."""
+        probabilities = [
+            n.get_counts(t) / n.children_counts
+            for n in self._nodes
+            if n.children_counts != 0
+        ]
+        return sum(probabilities)
+
+    def get_prefix_probability(self, t: Word) -> float:
+        """Get the prefix-probability of a trace."""
+        final_nodes: List[Optional[Node]] = [n.get_end_node(t) for n in self._nodes]
+        return sum(
+            final_node.children_counts / self.size
+            for final_node in final_nodes
+            if final_node is not None and final_node.children_counts > 0
+        )
+
+    @property
+    def traces(self) -> Set[Word]:
+        """Get the set of traces."""
+        return set.union(*[n.traces() for n in self._nodes])
+
+    def items(self) -> Set[Tuple[Word, int]]:
+        """Get the traces and their counts."""
+        return set.union(*[n.items() for n in self._nodes])

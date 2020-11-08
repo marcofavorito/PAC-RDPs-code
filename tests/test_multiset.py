@@ -2,7 +2,11 @@
 import pytest
 from hypothesis import given, settings, strategies
 
-from src.learn_pdfa.utils.multiset import NaiveMultiset, PrefixTreeMultiset
+from src.learn_pdfa.utils.multiset import (
+    NaiveMultiset,
+    PrefixTreeMultiset,
+    ReadOnlyPrefixTreeMultiset,
+)
 
 
 @pytest.mark.parametrize("multiset_class", [NaiveMultiset, PrefixTreeMultiset])
@@ -72,14 +76,28 @@ def test_naive_multiset_and_prefix_based_multiset_equivalent(samples):
         multiset_1.add(s)
         multiset_2.add(s)
 
-    assert multiset_1.size == multiset_2.size
-    assert multiset_1.traces == multiset_2.traces
-    assert multiset_1.items() == multiset_2.items()
+    multiset_3 = ReadOnlyPrefixTreeMultiset(
+        {multiset_2._node, multiset_2._node, multiset_2._node}
+    )
+
+    assert multiset_1.size == multiset_2.size == multiset_3.size
+    assert multiset_1.traces == multiset_2.traces == multiset_2.traces
+    assert multiset_1.items() == multiset_2.items() == multiset_2.items()
 
     for s in samples:
         s = tuple(s)
-        assert multiset_1.get_counts(s) == multiset_2.get_counts(s)
-        assert multiset_1.get_probability(s) == multiset_2.get_probability(s)
-        assert multiset_1.get_prefix_probability(
-            s
-        ) == multiset_1.get_prefix_probability(s)
+        assert (
+            multiset_1.get_counts(s)
+            == multiset_2.get_counts(s)
+            == multiset_3.get_counts(s)
+        )
+        assert (
+            multiset_1.get_probability(s)
+            == multiset_2.get_probability(s)
+            == multiset_3.get_probability(s)
+        )
+        assert (
+            multiset_1.get_prefix_probability(s)
+            == multiset_1.get_prefix_probability(s)
+            == multiset_3.get_prefix_probability(s)
+        )

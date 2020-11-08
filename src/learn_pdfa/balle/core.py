@@ -9,7 +9,11 @@ from src.learn_pdfa import logger
 from src.learn_pdfa.balle.params import BalleParams
 from src.learn_pdfa.utils.base import l_infty_norm, prefix_distance_infty_norm
 from src.learn_pdfa.utils.multiset import Counter as ConcreteMultiset  # noqa: ignore
-from src.learn_pdfa.utils.multiset import Multiset
+from src.learn_pdfa.utils.multiset import (  # noqa: ignore
+    Multiset,
+    NaiveMultiset,
+    PrefixTreeMultiset,
+)
 from src.pdfa import PDFA
 from src.pdfa.types import Character, State, Word
 
@@ -106,9 +110,11 @@ class SubgraphLearner(ABC):
 
     def _sample(self):
         """Do the sampling."""
+        logger.info("Generating the sample.")
         generator = self.params.sample_generator
         self.samples = generator.sample(n=self.params.nb_samples)
         self.samples = list(map(lambda x: tuple(x), self.samples))
+        logger.info("Populate root multiset.")
         # attach the entire sample as a multiset ot the initial state.
         self.vertex2multiset[self.initial_state] = ConcreteMultiset()
         self.vertex2multiset[self.initial_state].update(self.samples)
