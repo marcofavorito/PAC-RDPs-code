@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass
-from typing import Collection, Dict, Iterable, Optional, Set, Tuple
+from typing import Collection, Dict, Iterable, Optional, Sequence, Set, Tuple
 
 from src.pdfa.types import Character, Word
 
@@ -155,6 +155,10 @@ class Multiset(ABC):
     """Abstract multiset."""
 
     @abstractmethod
+    def get_counts(self, trace: Word) -> int:
+        """Get counts."""
+
+    @abstractmethod
     def add(self, t: Word, times: int = 1) -> None:
         """
         Add a trace in the multiset.
@@ -182,10 +186,14 @@ class Multiset(ABC):
     def traces(self) -> Set[Word]:
         """Get the traces."""
 
-    @property
     @abstractmethod
     def items(self) -> Set[Tuple[Word, int]]:
         """Get list of tuples (trace, count)."""
+
+    def update(self, sample: Sequence[Word]):
+        """Add items."""
+        for t in sample:
+            self.add(t)
 
     def __len__(self) -> int:
         """Get the length."""
@@ -195,6 +203,14 @@ class Multiset(ABC):
         """Get the traces."""
         return iter(self.traces)
 
+    def __getitem__(self, item):
+        """Get the count."""
+        return self.get_counts(item)
+
+    def values(self) -> Sequence[int]:
+        """Get the values."""
+        return [v for _, v in self.items()]
+
 
 class NaiveMultiset(Multiset):
     """Implement a multiset in a naive way - using a counter."""
@@ -202,6 +218,10 @@ class NaiveMultiset(Multiset):
     def __init__(self):
         """Initialize the multiset."""
         self._counter = Counter()
+
+    def get_counts(self, trace: Word) -> int:
+        """Get counts."""
+        return self._counter[trace]
 
     def add(self, t: Word, times: int = 1) -> None:
         """Add an item to the multiset."""
@@ -252,6 +272,10 @@ class PrefixTreeMultiset(Multiset):
         :param node: the node of the tree from where to start.
         """
         self._node = node if node is not None else Node(parent=None)
+
+    def get_counts(self, trace: Word) -> int:
+        """Get counts."""
+        return self._node.get_counts(trace)
 
     def add(self, t: Word, times: int = 1) -> None:
         """Add an element."""

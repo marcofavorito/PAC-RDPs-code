@@ -78,6 +78,7 @@ def test_naive_multiset_and_prefix_based_multiset_equivalent(samples):
 
     for s in samples:
         s = tuple(s)
+        assert multiset_1.get_counts(s) == multiset_2.get_counts(s)
         assert multiset_1.get_probability(s) == multiset_2.get_probability(s)
         assert multiset_1.get_prefix_probability(
             s

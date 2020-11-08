@@ -18,3 +18,8 @@ pipenv shell && pipenv install --dev
 
 Please have a look at the `notebooks/` 
 to see how to use the code.
+
+You might need 
+```
+PYTHONPATH="`pwd`:$PYTHONPATH"
+```
