@@ -5,6 +5,7 @@ from multiprocessing import Pool
 from typing import Callable, Sequence
 
 from src.pdfa import PDFA
+from src.pdfa.base import FINAL_SYMBOL
 from src.pdfa.types import Word
 
 
@@ -12,11 +13,12 @@ class Generator(ABC):
     """Wrapper to a PDFA to make sampling as a function call."""
 
     @abstractmethod
-    def sample(self, n: int = 1) -> Sequence[Word]:
+    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
         """
         Generate a sample of size n.
 
         :param n: the size of the sample.
+        :param with_final: if True, append final symbol to each sampled word.
         :return: the list of sampled traces.
         """
 
@@ -32,9 +34,11 @@ class SimpleGenerator(Generator):
         """Sample a trace."""
         return self._pdfa.sample()
 
-    def sample(self, n: int = 1) -> Sequence[Word]:
+    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
         """Generate a sample of size n."""
-        return [self() for _ in range(n)]
+        return [
+            tuple(self()) + ((FINAL_SYMBOL,) if with_final else ()) for _ in range(n)
+        ]
 
 
 class MultiprocessedGenerator(Generator):
@@ -50,22 +54,24 @@ class MultiprocessedGenerator(Generator):
         self._nb_processes = nb_processes
         self._pool = Pool(nb_processes)
 
-    def __call__(self):
+    def __call__(self, with_final: bool = False):
         """Sample a trace."""
-        return self._generator.sample()
+        return self._generator.sample(with_final=with_final)
 
     @staticmethod
-    def _job(n: int, sample_func: Callable[[int], Sequence[Word]]):
-        return [sample_func(1)[0] for _ in range(n)]
+    def _job(
+        n: int, with_final: bool, sample_func: Callable[[int, bool], Sequence[Word]]
+    ):
+        return [sample_func(1, with_final)[0] for _ in range(n)]
 
-    def sample(self, n: int = 1) -> Sequence[Word]:
+    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
         """Generate a sample, multiprocessed."""
         n_per_process = ceil(n / self._nb_processes)
         sample = []
 
         results = [
             self._pool.apply_async(
-                self._job, args=[n_per_process, self._generator.sample]
+                self._job, args=[n_per_process, with_final, self._generator.sample]
             )
             for _ in range(self._nb_processes)
         ]

@@ -1,6 +1,6 @@
 """Main test module."""
 from functools import partial
-from typing import Dict, Set, Tuple
+from typing import Set, Tuple
 
 import gym
 import numpy as np
@@ -9,7 +9,7 @@ from gym.wrappers import TimeLimit
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.utils.generator import MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, random_exploration_policy
-from src.pdfa.types import Character
+from src.pdfa.types import State, TransitionFunctionDict
 
 
 def learning_rotating_mab(
@@ -20,7 +20,7 @@ def learning_rotating_mab(
     delta: float,
     n_upperbound: int,
     nb_processes: int = 8,
-) -> Tuple[RDPGenerator, Tuple[Set[int], Dict[int, Dict[Character, int]]]]:
+) -> Tuple[RDPGenerator, Tuple[Set[State], TransitionFunctionDict]]:
     """Test learning of Rotating MAB."""
     env = gym.make("NonMarkovianRotatingMAB-v0", winning_probs=winning_probabilities)
     env = TimeLimit(env, max_episode_steps=max_episode_steps)
@@ -39,7 +39,7 @@ def learning_rotating_mab(
     print(f"Average length of traces: {np.mean([len(e) for e in examples])}")
 
     mp_rdp_generator = MultiprocessedGenerator(rdp_generator, nb_processes=nb_processes)
-    v, t = learn_pdfa(
+    pdfa = learn_pdfa(
         algorithm=Algorithm.BALLE,
         nb_samples=nb_samples,
         sample_generator=mp_rdp_generator,
@@ -47,7 +47,7 @@ def learning_rotating_mab(
         delta=delta,
         n=n_upperbound,
     )
-    return rdp_generator, (v, t)
+    return rdp_generator, (pdfa.states, pdfa.transition_dict)
 
 
 def test_learning_rotating_mab_2_arms_nondeterministic():
@@ -76,7 +76,7 @@ def test_learning_rotating_mab_3_arms_deterministic():
         nb_processes=8,
     )
 
-    assert len(v) == 3
+    assert len(v) == 4
 
 
 def test_learning_rotating_mab_3_arms_nondeterministic():
@@ -91,7 +91,7 @@ def test_learning_rotating_mab_3_arms_nondeterministic():
         nb_processes=8,
     )
 
-    assert len(v) == 3
+    assert len(v) == 4
 
 
 def test_learning_rotating_mab_4_arms_deterministic():
@@ -105,4 +105,4 @@ def test_learning_rotating_mab_4_arms_deterministic():
         n_upperbound=5,
         nb_processes=8,
     )
-    assert len(v) == 4
+    assert len(v) == 5

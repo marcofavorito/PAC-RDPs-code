@@ -1,11 +1,12 @@
 """Module that includes algorithms to learn RDPs."""
 from functools import partial
-from typing import Callable, Sequence
+from typing import Callable, List, Sequence, cast
 
 import gym
 import numpy as np
 
 from src.learn_pdfa.utils.generator import Generator
+from src.pdfa.base import FINAL_SYMBOL
 from src.pdfa.types import Word
 
 
@@ -40,11 +41,12 @@ class RDPGenerator(Generator):
         """Get the alphabet size."""
         return int(np.prod([self.action_dim, self.nb_rewards, self.obs_space_dim]))
 
-    def sample(self, n: int = 1) -> Sequence[Word]:
+    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
         """Sample a set of samples."""
         result = []
         for _ in range(n):
             word = self._sample_word()
+            word = cast(List, word) + ([FINAL_SYMBOL] if with_final else [])
             result.append(word)
         return result
 

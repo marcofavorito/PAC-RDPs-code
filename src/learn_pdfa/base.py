@@ -4,6 +4,7 @@ from typing import Callable, Dict
 
 from src.learn_pdfa.balle.core import learn_pdfa as balle_learn_pdfa
 from src.learn_pdfa.palmer.core import learn_pdfa as palmer_learn_pdfa
+from src.pdfa import PDFA
 
 
 class Algorithm(Enum):
@@ -19,7 +20,7 @@ _algorithm_to_function: Dict[Algorithm, Callable] = {
 }
 
 
-def learn_pdfa(algorithm: Algorithm = Algorithm.PALMER, **kwargs):
+def learn_pdfa(algorithm: Algorithm = Algorithm.PALMER, **kwargs) -> PDFA:
     """
     PAC-learn a PDFA.
 

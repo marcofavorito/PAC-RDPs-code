@@ -16,6 +16,7 @@ from src.pdfa.helpers import (
 from src.pdfa.types import Character, State, TransitionFunctionDict, Word
 
 FINAL_STATE = -1
+FINAL_SYMBOL = -1
 
 
 @dataclass(frozen=True)
@@ -121,14 +122,21 @@ class PDFA:
         result = 1.0
         current_state = self.initial_state
         for character in word:
-            if current_state is None or current_state == self.final_state:
-                result = 0.0
-                break
+            if current_state is None:
+                return 0.0
+
             next_state, probability = self.transition_dict.get(current_state, {}).get(
                 character, (None, 0.0)
             )
             current_state = next_state
             result *= probability
+
+        last_char_was_final = word[-1] == FINAL_SYMBOL
+        if not last_char_was_final and current_state != self.final_state:
+            _, final_prob = self.transition_dict.get(current_state, {}).get(
+                FINAL_SYMBOL, (None, 1.0)
+            )
+            result *= final_prob
         return 0.0 if current_state != self.final_state else result
 
     def sample(self) -> Word:

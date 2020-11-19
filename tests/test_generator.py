@@ -73,6 +73,6 @@ def test_multiprocess_generator_helper_function():
             }
         },
     )
-    sample = MultiprocessedGenerator._job(10, SimpleGenerator(automaton).sample)
+    sample = MultiprocessedGenerator._job(10, False, SimpleGenerator(automaton).sample)
     assert len(sample) == 10
     assert all(character in {0, 1} for s in sample for character in s)

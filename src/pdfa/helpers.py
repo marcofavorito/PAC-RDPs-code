@@ -1,11 +1,13 @@
 """Helpers module of the PDFA package."""
+from collections import deque
 from copy import copy
-from typing import Set
+from typing import Deque, Set, Tuple
 
 from src.helpers.base import assert_
 from src.pdfa.types import Character, State, TransitionFunctionDict, Word
 
-ROUND_PRECISION = 10
+ROUND_PRECISION = 5
+PROB_LOWER_BOUND = 0.01
 
 
 def _check_transitions_are_legal(
@@ -66,12 +68,34 @@ def _check_is_legal_state_or_final(state: State, nb_states: int) -> None:
 def _check_is_legal_character(character: Character, alphabet_size) -> None:
     """Check that a character is in the alphabet."""
     assert_(
-        0 <= character < alphabet_size, "Provided character is not in the alphabet."
+        -1 <= character < alphabet_size, "Provided character is not in the alphabet."
     )
 
 
 def _check_is_legal_word(w: Word, alphabet_size) -> None:
     """Check that a word is consistent with the alphabet."""
     assert_(
-        all(0 <= c < alphabet_size for c in w), "Provided word is not in the alphabet."
+        all(-1 <= c < alphabet_size for c in w), "Provided word is not in the alphabet."
     )
+
+
+def filter_transition_function(
+    transition_function: TransitionFunctionDict, lower_bound: float
+) -> Tuple[Set[State], TransitionFunctionDict]:
+    """Filter the transition function by removing low frequency transitions."""
+    visited = set()
+    new_function: TransitionFunctionDict = {}
+
+    queue: Deque = deque()
+    queue.append(0)
+    while len(queue) > 0:
+        current = queue.pop()
+        visited.add(current)
+        next_transitions = transition_function.get(current, {})
+        for char, (next_, prob) in next_transitions.items():
+            if prob > lower_bound:
+                new_function.setdefault(current, {})[char] = (next_, prob)
+                if next_ not in visited:
+                    queue.appendleft(next_)
+
+    return visited, new_function

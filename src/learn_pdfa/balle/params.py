@@ -16,7 +16,7 @@ class BalleParams:
     epsilon: the tolerance error.
     delta: the failure probability for the subgraph construction.
     delta: the failure probability for the probability estimation.
-    mu: the distinguishability factor.
+    mu: the prefix-distinguishability factor.
     n: the upper bound of the number of states.
     """
 
@@ -25,6 +25,7 @@ class BalleParams:
     n: int
     alphabet_size: int
     delta: float = 0.1
+    epsilon: float = 0.1
 
     def __post_init__(self):
         """Validate inputs."""
@@ -40,3 +41,8 @@ class BalleParams:
         s = self.alphabet_size
         n = self.n
         return d / (n * (n * s + s + 1))
+
+    @property
+    def gamma_min(self) -> float:
+        """Get the smoothing probability."""
+        return self.epsilon / 4 / (self.alphabet_size + 1)

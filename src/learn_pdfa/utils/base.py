@@ -4,6 +4,7 @@ from functools import singledispatch
 from typing import Union
 
 from src.learn_pdfa.utils.multiset import Multiset, NaiveMultiset, PrefixTreeMultiset
+from src.pdfa.types import Word
 
 
 def l_infty_norm(
@@ -70,7 +71,7 @@ def _(multiset, trace) -> float:
 
 
 @singledispatch
-def get_prefix_probability(multiset, trace) -> float:
+def get_prefix_probability(multiset: Multiset, trace: Word) -> float:
     """Get the prefix probability of a trace against a multiset."""
 
 
@@ -86,13 +87,14 @@ def _(multiset, trace) -> float:
 
 @get_prefix_probability.register(Counter)  # type: ignore
 def _(multiset, trace) -> float:
-    card1 = len(multiset)
+    card1 = sum(multiset.values())
     d1 = 0.0
-    for i in range(len(trace)):
-        prefix, suffix = trace[:i], trace[i:]
-        for j in range(len(suffix)):
-            current_suffix = suffix[:j]
-            d1 += multiset[prefix + current_suffix]
+    for string in multiset.keys():
+        for i in range(len(string) + 1):
+            prefix, suffix = string[:i], string[i:]
+            if prefix != trace:
+                continue
+            d1 += multiset[prefix + suffix]
     return d1 / card1
 
 

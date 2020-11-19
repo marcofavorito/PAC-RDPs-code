@@ -4,7 +4,11 @@ from typing import Callable, Dict, Set
 import graphviz
 
 from src.pdfa import PDFA
-from src.pdfa.helpers import ROUND_PRECISION
+from src.pdfa.helpers import (
+    PROB_LOWER_BOUND,
+    ROUND_PRECISION,
+    filter_transition_function,
+)
 from src.pdfa.types import Character
 
 
@@ -12,12 +16,18 @@ def to_graphviz(
     pdfa: PDFA,
     state2str: Callable[[int], str] = lambda x: str(x),
     char2str: Callable[[int], str] = lambda x: str(x),
+    round_precision: int = ROUND_PRECISION,
+    lower_bound: float = PROB_LOWER_BOUND,
 ) -> graphviz.Digraph:
     """Transform a PDFA to Graphviz."""
     graph = graphviz.Digraph(format="svg")
     graph.node("fake", style="invisible")
 
-    for state in pdfa.states:
+    states, filtered_transition_function = filter_transition_function(
+        pdfa.transition_dict, lower_bound
+    )
+
+    for state in states:
         if state == pdfa.initial_state:
             graph.node(state2str(state), root="true")
         else:
@@ -26,12 +36,15 @@ def to_graphviz(
 
     graph.edge("fake", state2str(pdfa.initial_state), style="bold")
 
-    for (start, char, prob, end) in pdfa.transitions:
-        graph.edge(
-            state2str(start),
-            state2str(end),
-            label=f"{char2str(char)}, {round(prob, ROUND_PRECISION)}",
-        )
+    for start, outgoing in filtered_transition_function.items():
+        for char, (end, prob) in outgoing.items():
+            new_prob = round(prob, round_precision)
+            if new_prob > lower_bound:
+                graph.edge(
+                    state2str(start),
+                    state2str(end),
+                    label=f"{char2str(char)}, {new_prob}",
+                )
 
     return graph
 
