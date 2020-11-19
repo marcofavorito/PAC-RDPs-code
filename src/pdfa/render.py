@@ -18,6 +18,7 @@ def to_graphviz(
     char2str: Callable[[int], str] = lambda x: str(x),
     round_precision: int = ROUND_PRECISION,
     lower_bound: float = PROB_LOWER_BOUND,
+    with_prob: bool = True,
 ) -> graphviz.Digraph:
     """Transform a PDFA to Graphviz."""
     graph = graphviz.Digraph(format="svg")
@@ -40,10 +41,12 @@ def to_graphviz(
         for char, (end, prob) in outgoing.items():
             new_prob = round(prob, round_precision)
             if new_prob > lower_bound:
+                label = f"{char2str(char)}"
+                label += f", {prob}" if with_prob else ""
                 graph.edge(
                     state2str(start),
                     state2str(end),
-                    label=f"{char2str(char)}, {new_prob}",
+                    label=label,
                 )
 
     return graph

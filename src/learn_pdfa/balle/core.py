@@ -237,7 +237,12 @@ class Learner(ABC):
             # For deterministic behaviour, pick the smallest
             sorted_non_distinct_vertices = sorted(self.non_distinct_vertices.keys())
             if len(sorted_non_distinct_vertices) > 1:
-                logger.warning(f"More than one non-distinct vertex: {sorted_non_distinct_vertices}")
+                logger.warning(
+                    f"More than one non-distinct vertex: {sorted_non_distinct_vertices}"
+                )
+                logger.warning(
+                    f"Distances and thresholds: {pprint.pformat(self.non_distinct_vertices)}"
+                )
             old_vertex = sorted_non_distinct_vertices[0]
             self.transitions.setdefault(self.start_state, {})[
                 self.character
