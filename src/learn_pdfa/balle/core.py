@@ -64,8 +64,15 @@ def _compute_threshold(m_u, m_v, s_u, s_v, delta):
 
 def test_distinct(
     multiset_candidate: Multiset, multiset_safe: Multiset, params: BalleParams
-) -> bool:
-    """Test whether a candidate state is distinct from a safe node."""
+) -> Tuple[float, float]:
+    """
+    Test whether a candidate state is distinct from a safe node.
+
+    :param multiset_candidate: the multiset of the candidate node.
+    :param multiset_safe: the multiset of the safe node.
+    :param params: the algorithm parameters.
+    :return: a pair of floats: the distance and the distinctness threshold
+    """
     cardinality_candidate = sum(multiset_candidate.values())
     cardinality_safe = sum(multiset_safe.values())
     # +1 for the empty trace
@@ -86,7 +93,7 @@ def test_distinct(
         l_infty_norm(multiset_candidate, multiset_safe),
         prefix_distance_infty_norm(multiset_candidate, multiset_safe),
     )
-    return distance > threshold
+    return distance, threshold
 
 
 class Learner(ABC):
@@ -205,13 +212,14 @@ class Learner(ABC):
         self.start_state, self.character = self.candidate_nodes_to_transitions[
             self.chosen_candidate_node
         ]
-        self.non_distinct_vertices = set()
+        self.non_distinct_vertices: Dict[int, Tuple[float, float]] = {}
         for v in self.vertices:
-            is_distinct = test_distinct(
+            distance, threshold = test_distinct(
                 self.biggest_multiset, self.vertex2multiset[v], self.params
             )
+            is_distinct = distance > threshold
             if not is_distinct:
-                self.non_distinct_vertices.add(v)
+                self.non_distinct_vertices[v] = (distance, threshold)
 
     def _add_new_state_or_edge(self):
         all_nodes_are_distinct = len(self.non_distinct_vertices) == 0
@@ -227,7 +235,10 @@ class Learner(ABC):
         else:
             # pick a safe node that has not distinguished from best candidate.
             # For deterministic behaviour, pick the smallest
-            old_vertex = sorted(self.non_distinct_vertices)[0]
+            sorted_non_distinct_vertices = sorted(self.non_distinct_vertices.keys())
+            if len(sorted_non_distinct_vertices) > 1:
+                logger.warning(f"More than one non-distinct vertex: {sorted_non_distinct_vertices}")
+            old_vertex = sorted_non_distinct_vertices[0]
             self.transitions.setdefault(self.start_state, {})[
                 self.character
             ] = old_vertex

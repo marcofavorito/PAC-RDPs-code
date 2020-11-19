@@ -44,7 +44,7 @@ class BalleParams:
         n = self.n
         return d / (n * (n * s + s + 1))
 
-    def get_gamma_min(self, expected_length) -> float:
+    def get_gamma_min(self, expected_length: float) -> float:
         """
         Get the smoothing probability.
 

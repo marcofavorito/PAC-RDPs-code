@@ -10,6 +10,7 @@ from src.pdfa.render import to_graphviz
 
 _default_svg_style = "display: block; margin-left: auto; margin-right: auto; width: 50%;"
 
+
 def display_svgs(*filenames, style=_default_svg_style):
     svgs = [SVG(filename=f).data for f in filenames]
     joined_svgs = "".join(svgs)
@@ -17,8 +18,8 @@ def display_svgs(*filenames, style=_default_svg_style):
     display(HTML(no_wrap_div))
 
 
-def render_automaton(pdfa: PDFA):
-    digraph = to_graphviz(pdfa)
+def render_automaton(pdfa: PDFA, **kwargs):
+    digraph = to_graphviz(pdfa, **kwargs)
     render_digraph(digraph)
 
 
