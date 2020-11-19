@@ -26,6 +26,8 @@ class BalleParams:
     alphabet_size: int
     delta: float = 0.1
     epsilon: float = 0.1
+    with_smoothing: bool = False
+    with_ground: bool = False
 
     def __post_init__(self):
         """Validate inputs."""
@@ -42,7 +44,11 @@ class BalleParams:
         n = self.n
         return d / (n * (n * s + s + 1))
 
-    @property
-    def gamma_min(self) -> float:
-        """Get the smoothing probability."""
-        return self.epsilon / 4 / (self.alphabet_size + 1)
+    def get_gamma_min(self, expected_length) -> float:
+        """
+        Get the smoothing probability.
+
+        :param expected_length: the expected length of traces.
+        :return:
+        """
+        return self.epsilon / 4 / expected_length / (self.alphabet_size + 1)

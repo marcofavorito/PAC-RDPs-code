@@ -20,7 +20,7 @@ from src.learn_pdfa.utils.multiset import (  # noqa: ignore
     PrefixTreeMultiset,
 )
 from src.pdfa import PDFA
-from src.pdfa.base import FINAL_SYMBOL
+from src.pdfa.base import FINAL_STATE, FINAL_SYMBOL
 from src.pdfa.types import Character, State, TransitionFunctionDict, Word
 
 
@@ -119,6 +119,7 @@ class Learner(ABC):
         generator = self.params.sample_generator
         self.samples = generator.sample(n=self.params.nb_samples, with_final=True)
         self.samples = list(map(lambda x: tuple(x), self.samples))
+        self.expected_trace_length = sum(map(len, self.samples)) / len(self.samples)
         logger.info("Populate root multiset.")
         # attach the entire sample as a multiset ot the initial state.
         self.vertex2multiset[self.initial_state] = ConcreteMultiset()
@@ -235,28 +236,14 @@ class Learner(ABC):
         """
         Complete graph.
 
-        Add a ground node (only if needed!), and a final node.
+        Add a ground node (only if needed, and if allowed by params), and a final node.
         """
-        ground_node = len(self.vertices)
-        ground_node_used = False
+        if self.params.with_ground:
+            self._add_ground_node()
 
+        final_node = FINAL_STATE
         for vertex in self.vertices:
-            transitions_from_vertex = self.transitions.get(vertex, {})
-            for character in self.alphabet:
-                if character not in transitions_from_vertex:
-                    ground_node_used = True
-                    transitions_from_vertex[character] = ground_node
-            self.transitions[vertex] = transitions_from_vertex
-
-        if ground_node_used:
-            self.vertices.add(ground_node)
-            self.transitions[ground_node] = {}
-            for character in self.alphabet:
-                self.transitions[ground_node][character] = ground_node
-
-        final_node = -1
-        for vertex in self.vertices:
-            self.transitions[vertex][FINAL_SYMBOL] = final_node
+            self.transitions.setdefault(vertex, {})[FINAL_SYMBOL] = final_node
 
     def _compute_probabilities(self):
         """Given vertices, transitions and its multisets, estimate edge probabilities."""
@@ -276,8 +263,32 @@ class Learner(ABC):
         """Given state and character, compute probability."""
         multiset = self.vertex2multiset.get(state, ConcreteMultiset())  # type: ignore
         size = len(multiset)
+        smoothing_probability = (
+            self.params.get_gamma_min(self.expected_trace_length)
+            if self.params.with_smoothing
+            else 0.0
+        )
         if size == 0:
-            return self._params.gamma_min
+            return self._params.get_gamma_min(self.expected_trace_length)
         char_prob = get_prefix_probability(multiset, (character,))
-        factor = 1 - (self.params.alphabet_size + 1) * self.params.gamma_min
-        return char_prob * factor + self.params.gamma_min
+        factor = 1 - (self.params.alphabet_size + 1) * smoothing_probability
+        return char_prob * factor + smoothing_probability
+
+    def _add_ground_node(self):
+        """Add a ground node."""
+        ground_node = len(self.vertices)
+        ground_node_used = False
+
+        for vertex in self.vertices:
+            transitions_from_vertex = self.transitions.get(vertex, {})
+            for character in self.alphabet:
+                if character not in transitions_from_vertex:
+                    ground_node_used = True
+                    transitions_from_vertex[character] = ground_node
+            self.transitions[vertex] = transitions_from_vertex
+
+        if ground_node_used:
+            self.vertices.add(ground_node)
+            self.transitions[ground_node] = {}
+            for character in self.alphabet:
+                self.transitions[ground_node][character] = ground_node

@@ -76,7 +76,7 @@ def test_learning_rotating_mab_3_arms_deterministic():
         nb_processes=8,
     )
 
-    assert len(v) == 4
+    assert len(v) == 3
 
 
 def test_learning_rotating_mab_3_arms_nondeterministic():
@@ -91,7 +91,7 @@ def test_learning_rotating_mab_3_arms_nondeterministic():
         nb_processes=8,
     )
 
-    assert len(v) == 4
+    assert len(v) == 3
 
 
 def test_learning_rotating_mab_4_arms_deterministic():
@@ -105,4 +105,4 @@ def test_learning_rotating_mab_4_arms_deterministic():
         n_upperbound=5,
         nb_processes=8,
     )
-    assert len(v) == 5
+    assert len(v) == 4
