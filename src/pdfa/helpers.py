@@ -4,7 +4,7 @@ from copy import copy
 from typing import Deque, Set, Tuple
 
 from src.helpers.base import assert_
-from src.pdfa.types import Character, State, TransitionFunctionDict, Word
+from src.types import Character, State, TransitionFunctionDict, Word
 
 ROUND_PRECISION = 5
 PROB_LOWER_BOUND = 0.01

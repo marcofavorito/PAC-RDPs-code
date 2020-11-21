@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Collection, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
-from src.pdfa.types import Character, Word
+from src.types import Character, Word
 
 
 @dataclass

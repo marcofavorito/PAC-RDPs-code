@@ -20,7 +20,7 @@ _algorithm_to_function: Dict[Algorithm, Callable] = {
 }
 
 
-def learn_pdfa(algorithm: Algorithm = Algorithm.PALMER, **kwargs) -> PDFA:
+def learn_pdfa(algorithm: Algorithm = Algorithm.BALLE, **kwargs) -> PDFA:
     """
     PAC-learn a PDFA.
 

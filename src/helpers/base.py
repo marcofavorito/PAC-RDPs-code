@@ -1,6 +1,5 @@
 """Base helper module."""
-
-from src.pdfa.types import TransitionFunctionDict
+from src.types import TransitionFunctionDict
 
 
 def assert_(condition: bool, message: str = ""):

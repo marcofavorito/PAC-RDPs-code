@@ -4,7 +4,7 @@ from functools import singledispatch
 from typing import Union
 
 from src.learn_pdfa.utils.multiset import Multiset, NaiveMultiset, PrefixTreeMultiset
-from src.pdfa.types import Word
+from src.types import Word
 
 
 def l_infty_norm(

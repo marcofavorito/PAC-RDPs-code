@@ -1,0 +1,3 @@
+[submodule "yarllib"]
+	path = yarllib
+	url = https://github.com/marcofavorito/yarllib.git

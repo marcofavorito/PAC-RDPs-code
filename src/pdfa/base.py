@@ -13,7 +13,7 @@ from src.pdfa.helpers import (
     _check_is_legal_word,
     _check_transitions_are_legal,
 )
-from src.pdfa.types import Character, State, TransitionFunctionDict, Word
+from src.types import Character, State, TransitionFunctionDict, Word
 
 FINAL_STATE = -1
 FINAL_SYMBOL = -1

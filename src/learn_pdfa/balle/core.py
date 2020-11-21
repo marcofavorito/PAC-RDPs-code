@@ -21,7 +21,7 @@ from src.learn_pdfa.utils.multiset import (  # noqa: ignore
 )
 from src.pdfa import PDFA
 from src.pdfa.base import FINAL_STATE, FINAL_SYMBOL
-from src.pdfa.types import Character, State, TransitionFunctionDict, Word
+from src.types import Character, State, TransitionFunctionDict, Word
 
 
 def learn_pdfa(**kwargs) -> PDFA:
@@ -33,7 +33,6 @@ def learn_pdfa(**kwargs) -> PDFA:
     """
     params = BalleParams(**kwargs)
     logger.info(f"Parameters: {pprint.pformat(str(params))}")
-    # vertices, transitions = learn_subgraph(params)  # noqa
     automaton = Learner(params).learn()
     return automaton
 

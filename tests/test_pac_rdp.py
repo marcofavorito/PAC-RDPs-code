@@ -9,7 +9,7 @@ from gym.wrappers import TimeLimit
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.utils.generator import MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, random_exploration_policy
-from src.pdfa.types import State, TransitionFunctionDict
+from src.types import State, TransitionFunctionDict
 
 
 def learning_rotating_mab(
@@ -50,7 +50,7 @@ def learning_rotating_mab(
     return rdp_generator, (pdfa.states, pdfa.transition_dict)
 
 
-def test_learning_rotating_mab_2_arms_nondeterministic():
+def test_learning_rotating_mab_2_arms_nondeterministic(nb_processes):
     """Test learning rotating MAB with 2 arms, nondeterministic."""
     rdp_generator, (v, t) = learning_rotating_mab(
         stop_probability=0.2,
@@ -59,12 +59,12 @@ def test_learning_rotating_mab_2_arms_nondeterministic():
         nb_samples=100000,
         delta=0.1,
         n_upperbound=10,
-        nb_processes=8,
+        nb_processes=nb_processes,
     )
     assert len(v) == 2
 
 
-def test_learning_rotating_mab_3_arms_deterministic():
+def test_learning_rotating_mab_3_arms_deterministic(nb_processes):
     """Test learning rotating MAB with 3 arms, deterministic."""
     rdp_generator, (v, t) = learning_rotating_mab(
         stop_probability=0.2,
@@ -73,13 +73,13 @@ def test_learning_rotating_mab_3_arms_deterministic():
         nb_samples=100000,
         delta=0.1,
         n_upperbound=5,
-        nb_processes=8,
+        nb_processes=nb_processes,
     )
 
     assert len(v) == 3
 
 
-def test_learning_rotating_mab_3_arms_nondeterministic():
+def test_learning_rotating_mab_3_arms_nondeterministic(nb_processes):
     """Test learning rotating MAB with 3 arms, nondeterministic."""
     rdp_generator, (v, t) = learning_rotating_mab(
         stop_probability=0.2,
@@ -88,14 +88,15 @@ def test_learning_rotating_mab_3_arms_nondeterministic():
         nb_samples=1000000,
         delta=0.05,
         n_upperbound=6,
-        nb_processes=8,
+        nb_processes=nb_processes,
     )
 
     assert len(v) == 3
 
 
-def test_learning_rotating_mab_4_arms_deterministic():
-    """Test learning rotating MAB with 4 arms, deterministic."""
+"""
+def test_learning_rotating_mab_4_arms_deterministic(nb_processes):
+    Test learning rotating MAB with 4 arms, deterministic.
     rdp_generator, (v, t) = learning_rotating_mab(
         stop_probability=0.2,
         winning_probabilities=(1.0, 0.0, 0.0, 0.0),
@@ -103,6 +104,7 @@ def test_learning_rotating_mab_4_arms_deterministic():
         nb_samples=300000,
         delta=0.1,
         n_upperbound=5,
-        nb_processes=8,
+        nb_processes=nb_processes,
     )
     assert len(v) == 4
+"""

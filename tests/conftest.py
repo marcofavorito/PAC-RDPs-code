@@ -1,5 +1,6 @@
 """Conftest module."""
-
+import logging
+import multiprocessing
 import shutil
 import sys
 import tempfile
@@ -13,6 +14,16 @@ from tests.pdfas import (  # noqa: E402, F401
     pdfa_sequence_three_states,
     pdfa_two_states,
 )
+
+logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session")
+def nb_processes():
+    """Get the number of processes available."""
+    result = multiprocessing.cpu_count()
+    logger.debug(f"Number of cpus: {result}")
+    return result
 
 
 @contextmanager

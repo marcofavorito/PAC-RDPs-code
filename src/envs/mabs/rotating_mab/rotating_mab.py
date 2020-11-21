@@ -50,9 +50,9 @@ class RotatingMAB(gym.Env):
         self.action_space = Discrete(self.nb_arms)
 
         self.current_state = 0
-        self.seed = seed
+        self._seed = seed
         self.reward = winning_reward
-        np.random.seed(seed)
+        np.random.seed(self._seed)
 
     @property
     def nb_arms(self) -> int:

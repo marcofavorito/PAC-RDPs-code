@@ -1,13 +1,15 @@
 """Module that includes algorithms to learn RDPs."""
+from collections import deque
 from functools import partial
-from typing import Callable, List, Sequence, cast
+from typing import Callable, Deque, Dict, List, Sequence, Set, Tuple, cast
 
 import gym
 import numpy as np
+from gym.envs.toy_text.discrete import DiscreteEnv
 
 from src.learn_pdfa.utils.generator import Generator
-from src.pdfa.base import FINAL_SYMBOL
-from src.pdfa.types import Word
+from src.pdfa.base import FINAL_SYMBOL, PDFA
+from src.types import Character, State, Word
 
 
 class RDPGenerator(Generator):
@@ -77,3 +79,43 @@ def random_exploration_policy(env: gym.Env) -> int:
     It is declared as a module function so to be pickable.
     """
     return env.action_space.sample()
+
+
+def mdp_from_pdfa(
+    pdfa: PDFA, rdp_generator: RDPGenerator, stop_probability: float
+) -> DiscreteEnv:
+    """Infer the MDP from a PDFA."""
+    P: Dict[int, Dict[int, List[Tuple[float, int, float, bool]]]] = {}
+    initial_state_distribution = [1.0] + [0.0] * (pdfa.nb_states - 1)
+    nb_actions = rdp_generator.action_dim
+    factor = nb_actions / (1 - stop_probability)
+
+    for s in range(pdfa.nb_states):
+        for a in range(nb_actions):
+            P.setdefault(s, {})[a] = []
+
+    queue: Deque = deque()
+    queue.append(pdfa.initial_state)
+    visited: Set[State] = {pdfa.initial_state}
+    while len(queue) > 0:
+        current = queue.pop()
+        P.setdefault(current, {})
+
+        # process transitions
+        outgoing: Dict[Character, Tuple[State, float]] = pdfa.transition_dict[current]
+        transitions_by_arqf: Dict[Tuple[int, float, State], float] = {}
+        for character, (qf, probability) in outgoing.items():
+            if character == FINAL_SYMBOL:
+                continue
+            a, r, s = rdp_generator.decoder(character)
+            transitions_by_arqf.setdefault((a, r, qf), 0.0)
+            transitions_by_arqf[(a, r, qf)] += probability
+
+            if qf not in visited:
+                visited.add(qf)
+                queue.appendleft(qf)
+
+        for (a, r, qf), p in transitions_by_arqf.items():
+            P[current].setdefault(a, []).append((p * factor, qf, r, False))
+
+    return DiscreteEnv(pdfa.nb_states, nb_actions, P, initial_state_distribution)

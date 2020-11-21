@@ -6,7 +6,7 @@ from typing import Callable, Sequence
 
 from src.pdfa import PDFA
 from src.pdfa.base import FINAL_SYMBOL
-from src.pdfa.types import Word
+from src.types import Word
 
 
 class Generator(ABC):

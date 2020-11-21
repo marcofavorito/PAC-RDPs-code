@@ -9,7 +9,7 @@ from src.pdfa.helpers import (
     ROUND_PRECISION,
     filter_transition_function,
 )
-from src.pdfa.types import Character
+from src.types import Character
 
 
 def to_graphviz(

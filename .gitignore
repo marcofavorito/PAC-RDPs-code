@@ -683,3 +683,6 @@ MigrationBackup/
 .ionide/
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,vim,visualstudio,linux,macos,windows,python
+
+output/
+outputs/

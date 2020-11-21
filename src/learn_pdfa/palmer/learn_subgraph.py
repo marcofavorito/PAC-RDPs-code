@@ -8,7 +8,7 @@ from typing import Dict, Optional, Sequence, Set, Tuple
 from src.learn_pdfa import logger
 from src.learn_pdfa.palmer.params import PalmerParams
 from src.learn_pdfa.utils.base import l_infty_norm
-from src.pdfa.types import Character, State, Word
+from src.types import Character, State, Word
 
 
 def _compute_m0(params: PalmerParams):

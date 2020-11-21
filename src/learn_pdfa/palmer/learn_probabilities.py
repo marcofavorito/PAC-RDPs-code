@@ -8,7 +8,7 @@ from typing import Dict, Optional, Set, Tuple
 from src.learn_pdfa import logger
 from src.learn_pdfa.palmer.params import PalmerParams
 from src.pdfa import PDFA
-from src.pdfa.types import TransitionFunctionDict
+from src.types import TransitionFunctionDict
 
 
 def _sample_size(params: PalmerParams) -> int:
