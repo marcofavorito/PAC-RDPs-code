@@ -133,10 +133,12 @@ class PDFA:
 
         last_char_was_final = word[-1] == FINAL_SYMBOL
         if not last_char_was_final and current_state != self.final_state:
-            _, final_prob = self.transition_dict.get(current_state, {}).get(
+            final_state, final_prob = self.transition_dict.get(current_state, {}).get(
                 FINAL_SYMBOL, (None, 1.0)
             )
             result *= final_prob
+            if final_state is not None:
+                current_state = final_state
         return 0.0 if current_state != self.final_state else result
 
     def sample(self) -> Word:
