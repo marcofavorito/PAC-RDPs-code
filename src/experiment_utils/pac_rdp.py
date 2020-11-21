@@ -9,6 +9,7 @@ from src.learn_pdfa.utils.generator import Generator, MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, mdp_from_pdfa, random_exploration_policy
 from src.pdfa import PDFA
 from yarllib.base import AbstractAgent
+from yarllib.core import Policy
 from yarllib.helpers.history import History
 from yarllib.planning.gpi import ValueIterationAgent
 
@@ -42,6 +43,36 @@ class RDPLearner(AbstractAgent):
 
     def train(self, env: gym.Env, *args, max_nb_iterations: int = 50, **kwargs):
         """Train the agent."""
+        policy = args[0]
+        self._learn_pdfa(env)
+        new_env = mdp_from_pdfa(
+            cast(PDFA, self.pdfa),
+            cast(RDPGenerator, self.rdp_generator),
+            stop_probability=self.stop_probability,
+        )
+        self.value_iteration_agent = ValueIterationAgent(
+            new_env.observation_space, new_env.action_space, gamma=self.gamma
+        )
+        self.value_iteration_agent.train(
+            new_env, *args, max_nb_iterations=max_nb_iterations, **kwargs
+        )
+        return self.test(env, policy, **kwargs)
+
+    def test(self, env: gym.Env, policy: Optional[Policy] = None, **kwargs) -> History:
+        """Test the agent."""
+        wrapper = RDPWrapper(
+            env, cast(PDFA, self.pdfa), cast(RDPGenerator, self.rdp_generator)
+        )
+        return cast(ValueIterationAgent, self.value_iteration_agent).test(
+            wrapper, policy, **kwargs
+        )
+
+    def get_best_action(self, state):
+        """Get best action."""
+        return self.value_iteration_agent.get_best_action(state)
+
+    def _learn_pdfa(self, env: gym.Env) -> None:
+        """Learn a PDFA from the environment."""
         policy = partial(random_exploration_policy, env)
 
         self.rdp_generator = RDPGenerator(
@@ -65,29 +96,6 @@ class RDPLearner(AbstractAgent):
             delta=self.delta,
             n=self.upperbound,
         )
-        new_env = mdp_from_pdfa(
-            self.pdfa, self.rdp_generator, stop_probability=self.stop_probability
-        )
-        self.value_iteration_agent = ValueIterationAgent(
-            new_env.observation_space, new_env.action_space, gamma=self.gamma
-        )
-        self.value_iteration_agent.train(
-            new_env, *args, max_nb_iterations=max_nb_iterations, **kwargs
-        )
-        return self.test(env, **kwargs)
-
-    def test(self, env: gym.Env, *args, **kwargs) -> History:
-        """Test the agent."""
-        wrapper = RDPWrapper(
-            env, cast(PDFA, self.pdfa), cast(RDPGenerator, self.rdp_generator)
-        )
-        return cast(ValueIterationAgent, self.value_iteration_agent).test(
-            wrapper, **kwargs
-        )
-
-    def get_best_action(self, state):
-        """Get best action."""
-        return self.value_iteration_agent.get_best_action(state)
 
 
 class RDPWrapper(gym.Wrapper):

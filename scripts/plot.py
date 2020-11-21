@@ -25,7 +25,7 @@ if __name__ == '__main__':
     for experiment_dir in filter(_is_dir, output_dir.iterdir()):
         names.append(experiment_dir.name)
         experiment_histories = []
-        for run_dir in filter(lambda p: p.is_dir() and p.name.startswith("experiment"), experiment_dir.iterdir()):
+        for run_dir in filter(lambda p: p.is_dir() and p.name.startswith(p.name), experiment_dir.iterdir()):
             history_json = json.load((run_dir / "history.json").open())
             experiment_histories.append(history_from_json(history_json))
 

@@ -57,6 +57,7 @@ class Experiment(ABC):
         self.rendering: bool = rendering
         self.output_dir: Path = Path(output_dir)
         self.experiment_name: str = experiment_name
+        self.experiment_dir: Path = self.output_dir / self.experiment_name
         self.seeds = seeds
 
         self.callbacks: List = []
@@ -75,12 +76,12 @@ class Experiment(ABC):
 
     def setup(self):
         """Set up the experiment."""
-        output_dir = Path(self.output_dir)
-        if output_dir.exists():
-            logging.info(f"Removing directory {output_dir}...")
-            shutil.rmtree(output_dir)
-        logging.info(f"Creating directory {output_dir}...")
-        output_dir.mkdir(parents=True, exist_ok=False)
+        experiment_dir = Path(self.experiment_dir)
+        if experiment_dir.exists():
+            logging.info(f"Removing directory {experiment_dir}...")
+            shutil.rmtree(experiment_dir)
+        logging.info(f"Creating directory {experiment_dir}...")
+        experiment_dir.mkdir(parents=True, exist_ok=False)
 
         callbacks = []
         if self.rendering:
@@ -102,6 +103,7 @@ class Experiment(ABC):
             nb_episodes=self.nb_episodes,
             seeds=self.seeds,
             nb_workers=self.nb_processes,
+            name_prefix=self.experiment_name,
         )
         return self.agents, self.histories
 
@@ -110,29 +112,29 @@ class Experiment(ABC):
         logging.info("Runs completed.")
         logging.info("Plotting summaries...")
         plot_summaries(
-            [self.histories], labels=[self.experiment_name], prefix=str(self.output_dir)
+            [self.histories],
+            labels=[self.experiment_name],
+            prefix=str(self.experiment_dir),
         )
 
         env = self.make_env()
         for ag, h in zip(self.agents, self.histories):
-            experiment_dir = self.output_dir / h.name
-            self._process_experiment(ag, h, experiment_dir)
+            run_dir = self.experiment_dir / h.name
+            self._process_experiment(ag, h, run_dir)
 
             ag.test(
                 env,
                 nb_episodes=1,
                 policy=GreedyPolicy(),
-                callbacks=[FrameCapture(experiment_dir / "frames")]
-                if self.rendering
-                else [],
+                callbacks=[FrameCapture(run_dir / "frames")] if self.rendering else [],
             )
 
         logging.info("Saving environment object...")
-        with Path(self.output_dir / "env.obj").open("wb") as fp:
+        with Path(self.experiment_dir / "env.obj").open("wb") as fp:
             pickle.dump(env, fp)
 
         print("Experiment done.")
-        print(f"Find output in {self.output_dir}.")
+        print(f"Find output in {self.experiment_dir}.")
 
     def _process_experiment(
         self, agent: AbstractAgent, history: History, experiment_dir: Path
