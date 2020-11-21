@@ -60,38 +60,38 @@ clean-test: ## remove test and coverage artifacts
 lint-all: black isort lint static bandit safety # vulture pylint ## run all linters
 
 lint: ## check style with flake8
-	flake8 src tests 
+	flake8 src tests experiments
 
 static: ## static type checking with mypy
-	mypy src tests 
+	mypy src tests experiments
 
 isort: ## sort import statements with isort
-	isort src tests 
+	isort src tests experiments
 
 isort-check: ## check import statements order with isort
-	isort --check-only src tests 
+	isort --check-only src tests experiments
 
 black: ## apply black formatting
-	black src tests 
+	black src tests experiments
 
 black-check: ## check black formatting
-	black --check --verbose src tests 
+	black --check --verbose src tests experiments
 
 bandit: ## run bandit
-	bandit src tests 
+	bandit src tests experiments
 
 safety: ## run safety
 	safety check
 
 pylint: ## run pylint
-	pylint src tests 
+	pylint src tests experiments
 
 vulture: ## run vulture
 	vulture src /whitelist.py
 
 test: ## run tests quickly with the default Python
 	pytest tests --doctest-modules \
-        src tests/ \
+        src tests experiments/ \
         --cov=src \
         --cov-report=xml \
         --cov-report=html \
