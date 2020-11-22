@@ -3,7 +3,7 @@
 import pprint
 from abc import ABC
 from math import log, sqrt
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 from src.helpers.base import normalize
 from src.learn_pdfa import logger
@@ -27,6 +27,8 @@ from src.types import Character, State, TransitionFunctionDict, Word
 def learn_pdfa(**kwargs) -> PDFA:
     """
     PAC-learn a PDFA.
+
+    This is a wrapper function to the 'Learner' class, defined below.
 
     :param kwargs: the keyword arguments of the algorithm (see the BalleParams class).
     :return: the learnt PDFA.
@@ -113,11 +115,11 @@ class Learner(ABC):
         self.vertices = {self.initial_state}
         self.transitions: Dict[int, Dict[Character, int]] = {}
         self.alphabet = set(range(self.params.alphabet_size))
-        self.vertex2multiset: Dict[int, Multiset] = {}
         self.done = False
         self.iteration = 0
         self.iteration_upper_bound = self.params.n * self.params.alphabet_size
         self.samples = []
+        self.multiset_manager: Optional[SampleMultisetManager] = None
 
     def _sample(self):
         """Do the sampling."""
@@ -127,9 +129,8 @@ class Learner(ABC):
         self.samples = list(map(lambda x: tuple(x), self.samples))
         self.expected_trace_length = sum(map(len, self.samples)) / len(self.samples)
         logger.info("Populate root multiset.")
-        # attach the entire sample as a multiset ot the initial state.
-        self.vertex2multiset[self.initial_state] = ConcreteMultiset()
-        self.vertex2multiset[self.initial_state].update(self.samples)
+
+        self.multiset_manager = SampleMultisetManager(self.samples)
 
     def learn(self) -> PDFA:
         """
@@ -151,17 +152,25 @@ class Learner(ABC):
         logger.info(f"Iteration {self.iteration}")
 
         # compute candidate nodes. If none, terminate.
-        self._compute_candidate_nodes()
-        no_candidate_nodes = len(self.candidate_nodes_to_transitions) == 0
+        self.multiset_manager.reset_candidate_nodes(
+            self.vertices, self.alphabet, self.transitions
+        )
+
+        no_candidate_nodes = (
+            len(self.multiset_manager.candidate_nodes_to_transitions) == 0
+        )
         if no_candidate_nodes:
             self.done = True
             return
 
         # compute multisets
-        self._compute_multisets()
-        self.chosen_candidate_node, self.biggest_multiset = max(
-            self.multisets.items(), key=lambda x: sum(x[1].values())
-        )
+        self.multiset_manager.compute_multisets(self.transitions)
+
+        (
+            self.chosen_candidate_node,
+            self.biggest_multiset,
+        ) = self.multiset_manager.biggest_multiset()
+
         if sum(self.biggest_multiset.values()) == 0:
             self.done = True
             return
@@ -174,47 +183,17 @@ class Learner(ABC):
         self.iteration += 1
         self.done = self.iteration >= self.iteration_upper_bound
 
-    def _compute_candidate_nodes(self):
-        # per-iteration variables
-        self.candidate_nodes_by_transitions: Dict[Tuple[State, Character], int] = {}
-        self.candidate_nodes_to_transitions: Dict[int, Tuple[State, Character]] = {}
-        self.multisets: Dict[int, ConcreteMultiset] = {}
-
-        # recompute candidate nodes
-        for v in self.vertices:
-            for c in self.alphabet:
-                if (
-                    self.transitions.get(v, {}).get(c) is None
-                ):  # if transition undefined
-                    transition = (v, c)
-                    new_candidate = len(self.vertices) + len(
-                        self.candidate_nodes_to_transitions
-                    )
-                    self.candidate_nodes_to_transitions[new_candidate] = transition
-                    self.candidate_nodes_by_transitions[transition] = new_candidate
-                    self.multisets[new_candidate] = ConcreteMultiset()
-
-    def _compute_multisets(self):
-        for word in self.samples:
-            # s is always non-empty
-            for i in range(len(word)):
-                r, sigma, t = word[:i], word[i], word[i + 1 :]
-                q = extended_transition_fun(self.transitions, r)
-                if q is None:
-                    continue
-                transition = (q, sigma)
-                if transition in self.candidate_nodes_by_transitions:
-                    candidate_node = self.candidate_nodes_by_transitions[transition]
-                    self.multisets[candidate_node].update([tuple(t)])
-
     def _compute_non_distinct_vertices(self):
-        self.start_state, self.character = self.candidate_nodes_to_transitions[
+        (
+            self.start_state,
+            self.character,
+        ) = self.multiset_manager.candidate_nodes_to_transitions[
             self.chosen_candidate_node
         ]
         self.non_distinct_vertices: Dict[int, Tuple[float, float]] = {}
         for v in self.vertices:
-            distance, threshold = test_distinct(
-                self.biggest_multiset, self.vertex2multiset[v], self.params
+            distance, threshold = self.multiset_manager.test_distinct(
+                self.chosen_candidate_node, v, self.params
             )
             is_distinct = distance > threshold
             if not is_distinct:
@@ -227,7 +206,7 @@ class Learner(ABC):
             # we've got a new node
             new_vertex = len(self.vertices)
             self.vertices.add(new_vertex)
-            self.vertex2multiset[new_vertex] = self.biggest_multiset
+            self.multiset_manager.add_vertex(new_vertex, self.biggest_multiset)
             self.transitions.setdefault(self.start_state, {})[
                 self.character
             ] = new_vertex
@@ -276,7 +255,7 @@ class Learner(ABC):
 
     def _compute_edge_probability(self, state: int, character: int):
         """Given state and character, compute probability."""
-        multiset = self.vertex2multiset.get(state, ConcreteMultiset())  # type: ignore
+        multiset = self.multiset_manager.vertex2multiset.get(state, ConcreteMultiset())  # type: ignore
         size = len(multiset)
         smoothing_probability = (
             self.params.get_gamma_min(self.expected_trace_length)
@@ -307,3 +286,63 @@ class Learner(ABC):
             self.transitions[ground_node] = {}
             for character in self.alphabet:
                 self.transitions[ground_node][character] = ground_node
+
+
+class SampleMultisetManager:
+    """Sample multiset manager."""
+
+    def __init__(self, sample: Sequence[Word]):
+        """Initialize."""
+        self.main_multiset = ConcreteMultiset()
+        self.main_multiset.update(sample)
+
+        self.vertex2multiset: Dict[int, Multiset] = {}
+        self.vertex2multiset[0] = self.main_multiset
+
+        # temporary
+        self.candidate_nodes_by_transitions: Dict[Tuple[State, Character], int] = {}
+        self.candidate_nodes_to_transitions: Dict[int, Tuple[State, Character]] = {}
+        self.multisets: Dict[int, ConcreteMultiset] = {}
+
+    def reset_candidate_nodes(self, vertices, alphabet, transitions: Dict):
+        """Reset multisets."""
+        self.candidate_nodes_by_transitions: Dict[Tuple[State, Character], int] = {}
+        self.candidate_nodes_to_transitions: Dict[int, Tuple[State, Character]] = {}
+        self.multisets: Dict[int, ConcreteMultiset] = {}
+
+        # recompute candidate nodes
+        for v in vertices:
+            for c in alphabet:
+                if transitions.get(v, {}).get(c) is None:  # if transition undefined
+                    transition = (v, c)
+                    new_candidate = len(vertices) + len(
+                        self.candidate_nodes_to_transitions
+                    )
+                    self.candidate_nodes_to_transitions[new_candidate] = transition
+                    self.candidate_nodes_by_transitions[transition] = new_candidate
+                    self.multisets[new_candidate] = ConcreteMultiset()
+
+    def compute_multisets(self, transitions):
+        for word in self.main_multiset.elements():
+            # s is always non-empty
+            for i in range(len(word)):
+                r, sigma, t = word[:i], word[i], word[i + 1 :]
+                q = extended_transition_fun(transitions, r)
+                if q is None:
+                    continue
+                transition = (q, sigma)
+                if transition in self.candidate_nodes_by_transitions:
+                    candidate_node = self.candidate_nodes_by_transitions[transition]
+                    self.multisets[candidate_node].update([tuple(t)])
+
+    def biggest_multiset(self) -> Tuple[int, ConcreteMultiset]:
+        return max(self.multisets.items(), key=lambda x: sum(x[1].values()))
+
+    def test_distinct(self, chosen_candidate_node: int, v: int, params: BalleParams):
+        distance, threshold = test_distinct(
+            self.multisets[chosen_candidate_node], self.vertex2multiset[v], params
+        )
+        return distance, threshold
+
+    def add_vertex(self, new_vertex, biggest_multiset):
+        self.vertex2multiset[new_vertex] = biggest_multiset

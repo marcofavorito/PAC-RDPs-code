@@ -2,7 +2,17 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass
-from typing import Collection, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import (
+    Collection,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 from src.types import Character, Word
 
@@ -188,6 +198,12 @@ class Multiset(ABC):
     @abstractmethod
     def traces(self) -> Set[Word]:
         """Get the traces."""
+
+    def elements(self) -> Iterator[Word]:
+        """Get the set of traces."""
+        for trace, count in self.items():
+            for _ in range(count):
+                yield trace
 
     @abstractmethod
     def items(self) -> Set[Tuple[Word, int]]:
