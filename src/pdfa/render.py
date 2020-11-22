@@ -42,7 +42,7 @@ def to_graphviz(
             new_prob = round(prob, round_precision)
             if new_prob > lower_bound:
                 label = f"{char2str(char)}"
-                label += f", {prob}" if with_prob else ""
+                label += f", {new_prob}" if with_prob else ""
                 graph.edge(
                     state2str(start),
                     state2str(end),
