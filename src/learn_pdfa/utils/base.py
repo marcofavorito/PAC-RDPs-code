@@ -3,13 +3,18 @@ from collections import Counter
 from functools import singledispatch
 from typing import Union
 
-from src.learn_pdfa.utils.multiset import Multiset, NaiveMultiset, PrefixTreeMultiset
+from src.learn_pdfa.utils.multiset import (
+    Multiset,
+    NaiveMultiset,
+    PrefixTreeMultiset,
+    ReadOnlyPrefixTreeMultiset,
+)
 from src.types import Word
 
+MultisetLike = Union[Multiset, Counter]
 
-def l_infty_norm(
-    multiset1: Union[Multiset, Counter], multiset2: Union[Multiset, Counter]
-) -> float:
+
+def l_infty_norm(multiset1: MultisetLike, multiset2: MultisetLike) -> float:
     """Compute the supremum distance between two probability distributions."""
     current_max = 0.0
     card1 = sum(multiset1.values())
@@ -26,7 +31,7 @@ def l_infty_norm(
 
 
 def prefix_distance_infty_norm(
-    multiset1: Union[Multiset, Counter], multiset2: Union[Multiset, Counter]
+    multiset1: MultisetLike, multiset2: MultisetLike
 ) -> float:
     """Compute the supremum distance of prefixes of two probability distributions."""
     current_max = 0.0
@@ -65,6 +70,11 @@ def _(multiset, trace) -> float:
     return multiset.get_probability(trace)
 
 
+@get_probability.register(ReadOnlyPrefixTreeMultiset)  # type: ignore
+def _(multiset, trace) -> float:
+    return multiset.get_probability(trace)
+
+
 @get_probability.register(Counter)  # type: ignore
 def _(multiset, trace) -> float:
     return multiset[trace] / sum(multiset.values())
@@ -81,6 +91,11 @@ def _(multiset, trace) -> float:
 
 
 @get_prefix_probability.register(PrefixTreeMultiset)  # type: ignore
+def _(multiset, trace) -> float:
+    return multiset.get_prefix_probability(trace)
+
+
+@get_prefix_probability.register(ReadOnlyPrefixTreeMultiset)  # type: ignore
 def _(multiset, trace) -> float:
     return multiset.get_prefix_probability(trace)
 

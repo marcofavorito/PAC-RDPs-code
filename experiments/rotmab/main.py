@@ -27,10 +27,10 @@ if __name__ == "__main__":
             nb_processes=8,
         )
 
-        Experiment1 = mixin_experiment(QLearningExperiment, RotMABExperiment)
+        Experiment1 = mixin_experiment(QLearningExperiment, RotMABExperiment)  # type: ignore
         e1 = Experiment1(  # type: ignore
-            **common_configurations,
-            output_dir=output,  # type: ignore
+            **common_configurations,  # type: ignore
+            output_dir=output,
             experiment_name="q-learning",
         )
         e1.run()

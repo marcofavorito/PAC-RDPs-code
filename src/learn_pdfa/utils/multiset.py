@@ -1,9 +1,10 @@
 """Interface and implementation of a multiset."""
 from abc import ABC, abstractmethod
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import dataclass
 from typing import (
     Collection,
+    Deque,
     Dict,
     Iterable,
     Iterator,
@@ -13,6 +14,8 @@ from typing import (
     Set,
     Tuple,
 )
+
+import graphviz
 
 from src.types import Character, Word
 
@@ -381,3 +384,39 @@ class ReadOnlyPrefixTreeMultiset(Multiset):
     def items(self) -> Set[Tuple[Word, int]]:
         """Get the traces and their counts."""
         return set.union(*[n.items() for n in self._nodes])
+
+
+def node_to_graphviz(node: Node, max_depth: int = 10) -> graphviz.Digraph:
+    """From prefix-tree node to Graphviz."""
+    graph = graphviz.Digraph(format="svg")
+    graph.graph_attr["rankdir"] = "LR"
+    graph.edge("fake", str(node.index), style="bold")
+
+    queue: Deque = deque()
+    queue.append((0, node))
+    while len(queue) > 0:
+        i, current = queue.pop()
+        graph.node(
+            str(current.index),
+            root="true",
+            label=f"index={current.index}\ncounts={current.counts}\nchildren={current.children_counts}",
+        )
+
+        if i >= max_depth:
+            continue
+
+        transitions = current.next_transitions()
+        for symbol, next_node in transitions:
+            graph.edge(
+                str(current.index),
+                str(next_node.index),
+                label=str(symbol),
+            )
+            queue.appendleft((i + 1, next_node))
+
+    graph.node(
+        str(node.index),
+        root="true",
+        label=f"index={node.index}\ncounts={node.counts}\nchildren={node.children_counts}",
+    )
+    return graph
