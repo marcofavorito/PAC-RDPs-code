@@ -6,15 +6,16 @@ from typing import Dict
 import numpy as np
 from hypothesis import assume, given, strategies
 
-from src.learn_pdfa.base import Algorithm, learn_pdfa
-from src.learn_pdfa.utils.generator import MultiprocessedGenerator, SimpleGenerator
-from src.pdfa import PDFA
-from src.pdfa.helpers import FINAL_SYMBOL
 from tests.pdfas import (
     make_pdfa_one_state,
     make_pdfa_sequence_three_states,
     make_pdfa_two_state,
 )
+
+from src.learn_pdfa.base import Algorithm, learn_pdfa
+from src.learn_pdfa.utils.generator import MultiprocessedGenerator, SimpleGenerator
+from src.pdfa import PDFA
+from src.pdfa.helpers import FINAL_SYMBOL
 
 BALLE_CONFIG = dict(
     algorithm=Algorithm.BALLE,

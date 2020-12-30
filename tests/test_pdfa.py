@@ -4,11 +4,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tests.conftest import tempdir
+
 from src.pdfa import PDFA
 from src.pdfa.base import FINAL_STATE
 from src.pdfa.helpers import FINAL_SYMBOL
 from src.pdfa.render import to_graphviz
-from tests.conftest import tempdir
 
 
 def test_pdfa_example():
