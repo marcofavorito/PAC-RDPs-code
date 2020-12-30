@@ -44,7 +44,7 @@ jobs:
         choco install graphviz
     - name: Unit tests and coverage
       run: |
-        tox -e py${{ matrix.python-version }}
+        tox -e py${{ matrix.python-version }} -- -m 'not exclude_ci'
 #    - name: Upload coverage to Codecov
 #      uses: codecov/codecov-action@v1
 #      with:

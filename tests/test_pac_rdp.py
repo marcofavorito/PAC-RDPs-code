@@ -3,6 +3,7 @@ from copy import copy
 from typing import Dict, Tuple
 
 import gym
+import pytest
 from gym.wrappers import TimeLimit
 
 from src.experiment_utils.pac_rdp import RDPLearner
@@ -36,7 +37,6 @@ class BaseTestRotatingMAB:
         env = TimeLimit(env, max_episode_steps=cls.MAX_EPISODE_STEPS)
         cls.rdp_learner = RDPLearner(**config)
         cls.rdp_learner._learn_pdfa(env)
-        cls.rdp_learner.to_graphviz().render("actual")
 
     def test_nb_states(self):
         """Test expected number of states."""
@@ -78,6 +78,7 @@ class TestRotatingMAB4ArmsNondet(BaseTestRotatingMAB):
     OVERWRITE_CONFIG = dict(nb_samples=200000, stop_probability=0.1)
 
 
+@pytest.mark.exclude_ci
 class TestRotatingMAB5ArmsDet(BaseTestRotatingMAB):
     """Test learning rotating MAB with 5 arms, deterministic."""
 
@@ -85,6 +86,7 @@ class TestRotatingMAB5ArmsDet(BaseTestRotatingMAB):
     OVERWRITE_CONFIG = dict(nb_samples=75000, stop_probability=0.1)
 
 
+@pytest.mark.exclude_ci
 class TestRotatingMAB5ArmsNondet(BaseTestRotatingMAB):
     """Test learning rotating MAB with 5 arms, nondeterministic."""
 

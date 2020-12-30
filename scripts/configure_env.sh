@@ -2,6 +2,6 @@
 
 set -e
 
-pipenv run pip install yarllib --no-cache-dir --force
+pipenv run pip install yarllib --force
 
 set +e
