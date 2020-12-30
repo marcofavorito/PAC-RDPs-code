@@ -5,7 +5,7 @@ set -e
 function install_poetry_dependency(){
     cd "$1"
     poetry build
-    pip install `ls dist/*.whl`
+    python -m pip install `ls dist/*.whl`
     cd ..
 }
 

@@ -1,13 +1,24 @@
 """Main test module."""
+from abc import abstractmethod
+from copy import copy
+from typing import Dict
+
 import numpy as np
-import pytest
+from hypothesis import assume, given, strategies
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.utils.generator import MultiprocessedGenerator, SimpleGenerator
+from src.pdfa import PDFA
+from src.pdfa.helpers import FINAL_SYMBOL
+from tests.pdfas import (
+    make_pdfa_one_state,
+    make_pdfa_sequence_three_states,
+    make_pdfa_two_state,
+)
 
 BALLE_CONFIG = dict(
     algorithm=Algorithm.BALLE,
-    nb_samples=100000,
+    nb_samples=5000,
     delta=0.1,
     n=10,
 )
@@ -24,76 +35,89 @@ PALMER_CONFIG = dict(
     m0_max_debug=100000 / 10,
 )
 
+RTOL = 0.4
 
-@pytest.mark.parametrize(
-    "config,expected_nb_states", [(PALMER_CONFIG, 1), (BALLE_CONFIG, 2)]
-)
-def test_learn_pdfa_one_state(pdfa_one_state, nb_processes, config, expected_nb_states):
-    """Test the PDFA learning, 1 state."""
-    automaton = pdfa_one_state
-    expected_p = 0.3
-    generator = MultiprocessedGenerator(
-        SimpleGenerator(automaton), nb_processes=nb_processes
+
+class BaseTestLearnPDFA:
+    """Base test class for PDFA learning."""
+
+    NB_PROCESSES = 8
+    CONFIG: Dict = BALLE_CONFIG
+    ALPHABET_LEN = 3
+    OVERWRITE_CONFIG: Dict = {}
+
+    @classmethod
+    @abstractmethod
+    def _make_automaton(cls) -> PDFA:
+        """Make automaton."""
+
+    @classmethod
+    def setup_class(cls):
+        """Set up the test."""
+        cls.expected = cls._make_automaton()
+        generator = MultiprocessedGenerator(
+            SimpleGenerator(cls.expected), nb_processes=cls.NB_PROCESSES
+        )
+
+        config = copy(cls.CONFIG)
+        config.update(cls.OVERWRITE_CONFIG)
+        cls.actual = learn_pdfa(
+            sample_generator=generator,
+            alphabet_size=cls.expected.alphabet_size,
+            **config
+        )
+
+    def test_same_nb_states(self):
+        """Test same number of states."""
+        assert len(self.expected.states) == len(self.actual.states)
+
+    @given(
+        trace=strategies.lists(
+            strategies.integers(min_value=0, max_value=ALPHABET_LEN - 1),
+            min_size=0,
+            max_size=100,
+        )
     )
-
-    pdfa = learn_pdfa(
-        sample_generator=generator, alphabet_size=automaton.alphabet_size, **config
-    )
-
-    assert len(pdfa.states) == expected_nb_states
-    assert np.isclose(pdfa.get_probability([0]), 0.0, atol=0.1)
-    assert np.isclose(
-        pdfa.get_probability([0, 1]), (expected_p * (1 - expected_p)), atol=0.1
-    )
-    assert np.isclose(pdfa.get_probability([1]), 1 - expected_p, atol=0.1)
+    def test_equivalence(self, trace):
+        """Test equivalence between expected and learned PDFAs."""
+        max_value = self.expected.alphabet_size - 1
+        assume(all(x <= max_value for x in trace))
+        actual_trace = tuple(trace) + (FINAL_SYMBOL,)
+        actual_prob = self.actual.get_probability(actual_trace)
+        expected_prob = self.expected.get_probability(actual_trace)
+        assert np.isclose(expected_prob, actual_prob, rtol=RTOL)
 
 
-@pytest.mark.parametrize(
-    "config,expected_nb_states", [(PALMER_CONFIG, 2), (BALLE_CONFIG, 3)]
-)
-def test_learn_pdfa_two_state(pdfa_two_states, config, expected_nb_states):
-    """Test the PDFA learning, 2 states."""
-    automaton = pdfa_two_states
-    generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
+class TestOneState(BaseTestLearnPDFA):
+    """Test PDFA learning of one state PDFA."""
 
-    pdfa = learn_pdfa(
-        sample_generator=generator, alphabet_size=automaton.alphabet_size, **config
-    )
+    ALPHABET_LEN = 2
 
-    p1 = 0.4
-    p2 = 0.7
-    assert len(pdfa.states) == expected_nb_states
-    assert np.isclose(pdfa.get_probability([1]), p1, atol=0.4)
-    assert np.isclose(pdfa.get_probability([0]), 0.0, atol=0.01)
-    assert np.isclose(pdfa.get_probability([0, 1]), p1 * (1 - p2), atol=0.2)
-    assert np.isclose(pdfa.get_probability([0, 0, 1]), p1 * p2 * (1 - p2), atol=0.2)
+    @classmethod
+    def _make_automaton(cls) -> PDFA:
+        """Make automaton."""
+        return make_pdfa_one_state()
 
 
-# TODO add (PALMER_CONFIG, 3),
-@pytest.mark.parametrize(
-    "config,expected_nb_states",
-    [(BALLE_CONFIG, 4)],
-)
-@pytest.mark.parametrize(
-    "pdfa_sequence_three_states",
-    [
-        (0.4, 0.3, 0.2, 0.1),
-    ],
-    indirect=True,
-)
-def test_learn_pdfa_sequence_three_states(
-    pdfa_sequence_three_states, config, expected_nb_states
-):
-    """
-    Test the PDFA learning, with the "ring" PDFA, 3 states.
+class TestTwoState(BaseTestLearnPDFA):
+    """Test PDFA learning of two state PDFA."""
 
-    Due to same probabilities of two symbols, the three states collapse into one.
-    """
-    automaton = pdfa_sequence_three_states
-    generator = MultiprocessedGenerator(SimpleGenerator(automaton), nb_processes=8)
+    ALPHABET_LEN = 2
 
-    pdfa = learn_pdfa(
-        sample_generator=generator, alphabet_size=automaton.alphabet_size, **config
-    )
+    @classmethod
+    def _make_automaton(cls) -> PDFA:
+        """Make automaton."""
+        return make_pdfa_two_state()
 
-    assert 4 == len(pdfa.states)
+
+class TestSequenceThreeStates(BaseTestLearnPDFA):
+    """Test PDFA learning of two state PDFA."""
+
+    PROBABILITIES = (0.4, 0.3, 0.2, 0.1)
+    ALPHABET_LEN = 3
+    OVERWRITE_CONFIG = dict(nb_samples=75000)
+
+    @classmethod
+    def _make_automaton(cls) -> PDFA:
+        """Make automaton."""
+        return make_pdfa_sequence_three_states(*cls.PROBABILITIES)

@@ -3,11 +3,13 @@ from functools import partial
 from typing import Optional, cast
 
 import gym
+from graphviz import Digraph
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.utils.generator import Generator, MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, mdp_from_pdfa, random_exploration_policy
 from src.pdfa import PDFA
+from src.pdfa.render import to_graphviz
 from yarllib.base import AbstractAgent
 from yarllib.core import Policy
 from yarllib.helpers.history import History
@@ -37,9 +39,15 @@ class RDPLearner(AbstractAgent):
         self.gamma = gamma
         self.nb_sampling_processes = nb_sampling_processes
 
-        self.rdp_generator: Optional[RDPGenerator] = None
+        self._rdp_generator: Optional[RDPGenerator] = None
         self.pdfa: Optional[PDFA] = None
         self.value_iteration_agent: Optional[ValueIterationAgent] = None
+
+    @property
+    def rdp_generator(self) -> RDPGenerator:
+        """Get the RDP generator."""
+        assert self._rdp_generator is not None, "RDP generator not yet set."
+        return self._rdp_generator
 
     def train(self, env: gym.Env, *args, max_nb_iterations: int = 50, **kwargs):
         """Train the agent."""
@@ -75,7 +83,7 @@ class RDPLearner(AbstractAgent):
         """Learn a PDFA from the environment."""
         policy = partial(random_exploration_policy, env)
 
-        self.rdp_generator = RDPGenerator(
+        self._rdp_generator = RDPGenerator(
             env,
             policy=policy,
             nb_rewards=2,
@@ -95,6 +103,18 @@ class RDPLearner(AbstractAgent):
             alphabet_size=self.rdp_generator.alphabet_size(),
             delta=self.delta,
             n=self.upperbound,
+            with_infty_norm=False,
+        )
+
+    def to_graphviz(self) -> Digraph:
+        """Get the PDFA automaton."""
+        if self.pdfa is None:
+            raise ValueError("PDFA not learned yet.")
+        return to_graphviz(
+            self.pdfa,
+            char2str=lambda c: str(self.rdp_generator.decoder(c))
+            if c != -1
+            else str(-1),
         )
 
 
