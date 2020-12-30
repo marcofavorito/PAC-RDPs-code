@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import gym
-
 from yarllib.base import AbstractAgent
 from yarllib.callbacks import FrameCapture, RenderEnv
 from yarllib.core import Agent, Policy

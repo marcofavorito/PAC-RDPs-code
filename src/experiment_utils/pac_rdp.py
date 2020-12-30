@@ -4,16 +4,16 @@ from typing import Optional, cast
 
 import gym
 from graphviz import Digraph
+from yarllib.base import AbstractAgent
+from yarllib.core import Policy
+from yarllib.helpers.history import History
+from yarllib.planning.gpi import ValueIterationAgent
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_pdfa.utils.generator import Generator, MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, mdp_from_pdfa, random_exploration_policy
 from src.pdfa import PDFA
 from src.pdfa.render import to_graphviz
-from yarllib.base import AbstractAgent
-from yarllib.core import Policy
-from yarllib.helpers.history import History
-from yarllib.planning.gpi import ValueIterationAgent
 
 
 class RDPLearner(AbstractAgent):
