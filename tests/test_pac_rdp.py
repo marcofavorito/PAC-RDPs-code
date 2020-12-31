@@ -71,6 +71,7 @@ class TestRotatingMAB4ArmsDet(BaseTestRotatingMAB):
     OVERWRITE_CONFIG = dict(nb_samples=75000)
 
 
+@pytest.mark.exclude_ci
 class TestRotatingMAB4ArmsNondet(BaseTestRotatingMAB):
     """Test learning rotating MAB with 4 arms, nondeterministic."""
 

@@ -51,7 +51,6 @@ class NaiveMultiset(Multiset):
         """Get the set of traces."""
         return set(map(tuple, self._counter.keys()))
 
-    @property
     def items(self) -> Iterator[Tuple[Word, int]]:
         """Get the traces and their counts."""
         return iter(self._counter.items())
