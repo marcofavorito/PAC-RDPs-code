@@ -6,6 +6,9 @@ from typing import Deque, Set, Tuple
 from src.helpers.base import assert_
 from src.types import Character, State, TransitionFunctionDict, Word
 
+FINAL_STATE = -1
+FINAL_SYMBOL = -1
+
 ROUND_PRECISION = 5
 PROB_LOWER_BOUND = 0.01
 
@@ -23,11 +26,26 @@ def _check_transitions_are_legal(
             sum_outgoing_probabilities += probability
             _check_is_legal_character(character, alphabet_size)
             _check_is_legal_state_or_final(next_state, nb_states)
+            _check_final_symbol_and_final_state(character, next_state)
         rounded_sum = round(sum_outgoing_probabilities, ROUND_PRECISION)
         assert_(
             rounded_sum == 1.0,
             f"Outgoing probability from state {state} do not sum to 1: {rounded_sum}",
         )
+
+
+def _check_final_symbol_and_final_state(character: Character, next_state: State):
+    """Check that all and only the transitions with final symbol ends to the final state."""
+    is_final_symbol = character == FINAL_SYMBOL
+    is_final_state = next_state == FINAL_STATE
+    final_symbol_implies_final_state = not is_final_symbol or is_final_state
+    final_state_implies_final_symbol = not is_final_state or is_final_symbol
+    assert (
+        final_state_implies_final_symbol
+    ), "Only transitions with final symbol can go to final state."
+    assert (
+        final_symbol_implies_final_state
+    ), "All transitions with final symbol must go to final state."
 
 
 def _check_ergodicity(
@@ -39,7 +57,6 @@ def _check_ergodicity(
     next_ = {final_state}
     while current != next_:
         current = copy(next_)
-
         for start, out_transitions in transitions.items():
             for _char, (end, probability) in out_transitions.items():
                 if end in current and probability > 0.0:
@@ -60,7 +77,7 @@ def _check_is_legal_state(state: State, nb_states: int) -> None:
 def _check_is_legal_state_or_final(state: State, nb_states: int) -> None:
     """Check that a state is legal, including final states."""
     assert_(
-        0 <= state < nb_states or state == -1,
+        0 <= state < nb_states or state == FINAL_STATE,
         "Provided state is not in the set of states, nor is a final state.",
     )
 
@@ -68,14 +85,16 @@ def _check_is_legal_state_or_final(state: State, nb_states: int) -> None:
 def _check_is_legal_character(character: Character, alphabet_size) -> None:
     """Check that a character is in the alphabet."""
     assert_(
-        -1 <= character < alphabet_size, "Provided character is not in the alphabet."
+        FINAL_SYMBOL <= character < alphabet_size,
+        "Provided character is not in the alphabet.",
     )
 
 
 def _check_is_legal_word(w: Word, alphabet_size) -> None:
     """Check that a word is consistent with the alphabet."""
     assert_(
-        all(-1 <= c < alphabet_size for c in w), "Provided word is not in the alphabet."
+        all(0 <= c < alphabet_size for c in w[:-1]),
+        "Provided word is not in the alphabet.",
     )
 
 

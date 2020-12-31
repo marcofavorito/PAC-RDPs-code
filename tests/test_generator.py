@@ -3,13 +3,15 @@ from abc import abstractmethod
 
 import pytest
 
+from tests.pdfas import make_pdfa_one_state
+
 from src.learn_pdfa.utils.generator import (
     Generator,
     MultiprocessedGenerator,
     SimpleGenerator,
 )
 from src.pdfa import PDFA
-from src.pdfa.base import FINAL_STATE
+from src.pdfa.helpers import FINAL_SYMBOL
 
 
 class BaseTestGenerator:
@@ -17,16 +19,7 @@ class BaseTestGenerator:
 
     def make_automaton(self) -> PDFA:
         """Make a PDFA to generate samples from."""
-        automaton = PDFA(
-            1,
-            2,
-            {
-                0: {
-                    0: (0, 0.5),
-                    1: (FINAL_STATE, 1 - 0.5),
-                }
-            },
-        )
+        automaton = make_pdfa_one_state()
         return automaton
 
     @abstractmethod
@@ -42,7 +35,7 @@ class BaseTestGenerator:
         """Test generator 'sample' method."""
         sample = self.generator.sample(n=nb_samples)
         assert len(sample) == nb_samples
-        assert all(character in {0, 1} for s in sample for character in s)
+        assert all(character in {0, 1, FINAL_SYMBOL} for s in sample for character in s)
 
 
 class TestSimpleGenerator(BaseTestGenerator):
@@ -63,16 +56,7 @@ class TestMultiprocessedGenerator(BaseTestGenerator):
 
 def test_multiprocess_generator_helper_function():
     """Test multiprocess generator helper function."""
-    automaton = PDFA(
-        1,
-        2,
-        {
-            0: {
-                0: (0, 0.5),
-                1: (FINAL_STATE, 1 - 0.5),
-            }
-        },
-    )
+    automaton = make_pdfa_one_state()
     sample = MultiprocessedGenerator._job(10, False, SimpleGenerator(automaton).sample)
     assert len(sample) == 10
-    assert all(character in {0, 1} for s in sample for character in s)
+    assert all(character in {0, 1, FINAL_SYMBOL} for s in sample for character in s)

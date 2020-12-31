@@ -28,6 +28,7 @@ class BalleParams:
     epsilon: float = 0.1
     with_smoothing: bool = False
     with_ground: bool = False
+    with_infty_norm: bool = True
 
     def __post_init__(self):
         """Validate inputs."""

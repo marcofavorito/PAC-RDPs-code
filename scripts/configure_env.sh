@@ -2,14 +2,6 @@
 
 set -e
 
-function install_poetry_dependency(){
-    cd "$1"
-    poetry build
-    pip install `ls dist/*.whl`
-    cd ..
-}
-
-install_poetry_dependency yarllib
-
+pipenv run pip install yarllib --force
 
 set +e

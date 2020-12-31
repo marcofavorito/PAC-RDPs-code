@@ -1,17 +1,25 @@
 """Base module for miscellaneous utilities."""
 from collections import Counter
 from functools import singledispatch
-from typing import Union
+from typing import Iterable, Union
 
-from src.learn_pdfa.utils.multiset import (
-    Multiset,
-    NaiveMultiset,
+from src.learn_pdfa.utils.multiset.base import Multiset
+from src.learn_pdfa.utils.multiset.naive import NaiveMultiset
+from src.learn_pdfa.utils.multiset.tree import (
     PrefixTreeMultiset,
     ReadOnlyPrefixTreeMultiset,
 )
 from src.types import Word
 
 MultisetLike = Union[Multiset, Counter]
+
+
+def prefixes(t: Word) -> Iterable:
+    """Return all the prefixes of a trace."""
+    # len + 1, so it is guaranteed to do
+    # at least one iteration (in case of empty trace)
+    for i in range(len(t) + 1):
+        yield t[:i]
 
 
 def l_infty_norm(multiset1: MultisetLike, multiset2: MultisetLike) -> float:
@@ -111,6 +119,24 @@ def _(multiset, trace) -> float:
                 continue
             d1 += multiset[prefix + suffix]
     return d1 / card1
+
+
+@singledispatch
+def size(_multiset: MultisetLike) -> int:
+    """Get the multiset size.."""
+    raise NotImplementedError
+
+
+@size.register(Multiset)  # type: ignore
+def _(multiset: Multiset) -> int:
+    """Get the multiset size.."""
+    return multiset.size
+
+
+@size.register(Counter)  # type: ignore
+def _(multiset: Counter) -> int:
+    """Get the multiset size.."""
+    return sum(multiset.values())
 
 
 """

@@ -1,22 +1,12 @@
 """Interface and implementation of a multiset."""
-from abc import ABC, abstractmethod
-from collections import Counter, deque
+import itertools
+from collections import deque
 from dataclasses import dataclass
-from typing import (
-    Collection,
-    Deque,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-)
+from typing import Collection, Deque, Dict, Iterator, List, Optional, Set, Tuple
 
 import graphviz
 
+from src.learn_pdfa.utils.multiset.base import Multiset
 from src.types import Character, Word
 
 
@@ -29,14 +19,6 @@ class _TreeMetadata:
 
     def __hash__(self):
         return id(self)
-
-
-def prefixes(t: Word) -> Iterable:
-    """Return all the prefixes of a trace."""
-    # len + 1, so it is guaranteed to do
-    # at least one iteration (in case of empty trace)
-    for i in range(len(t) + 1):
-        yield t[:i]
 
 
 class Node:
@@ -79,18 +61,18 @@ class Node:
         """Get the index of the node."""
         return self._index
 
-    def add(self, trace: Word) -> None:
+    def add(self, trace: Word, times: int = 1) -> None:
         """Add a trace to the prefix tree."""
         current_node: Node = self
-        current_node.children_counts += 1
+        current_node.children_counts += times
         for character in trace:
             next_node = current_node._symbol2child.get(character, None)
             if next_node is None:
                 # create a new node.
                 next_node = Node(current_node, character)
             current_node = next_node
-            current_node.children_counts += 1
-        current_node.counts += 1
+            current_node.children_counts += times
+        current_node.counts += times
 
     def get_end_node(self, trace: Word) -> Optional["Node"]:
         """Get the finale node (after processing the entire trace)."""
@@ -126,23 +108,17 @@ class Node:
                 result = result.union(new_traces)
         return result
 
-    def items(self) -> Set[Tuple[Word, int]]:
+    def items(self) -> Iterator[Tuple[Word, int]]:
         """Get list of pairs, trace and its count."""
-        result: Set[Tuple[Word, int]] = set()
-
         prefix = (self._symbol,) if self._symbol is not None else ()
         if self.counts > 0:
-            result.add((prefix, self.counts))
+            yield prefix, self.counts
 
         next_nodes = self.next_nodes()
         for node in next_nodes:
-            next_traces_counts = node.items()
-            if len(next_traces_counts) > 0:
-                new_traces_counts = set(
-                    map(lambda x: (prefix + tuple(x[0]), x[1]), next_traces_counts)
-                )
-                result = result.union(new_traces_counts)
-        return result
+            for next_trace, next_count in node.items():
+                new_trace = prefix + tuple(next_trace)
+                yield new_trace, next_count
 
     def get_counts(self, t: Word) -> int:
         """Get the counts of a trace."""
@@ -167,123 +143,6 @@ class Node:
         return hash((Node, self.index, self._tree_metadata))
 
 
-class Multiset(ABC):
-    """Abstract multiset."""
-
-    @abstractmethod
-    def get_counts(self, trace: Word) -> int:
-        """Get counts."""
-
-    @abstractmethod
-    def add(self, t: Word, times: int = 1) -> None:
-        """
-        Add a trace in the multiset.
-
-        :param t: the trace to add.
-        :param times: how many times it should be added.
-        :return: None
-        """
-
-    @property
-    @abstractmethod
-    def size(self) -> int:
-        """Get the size."""
-
-    @abstractmethod
-    def get_probability(self, t: Word) -> float:
-        """Get the probability of a trace."""
-
-    @abstractmethod
-    def get_prefix_probability(self, t: Word) -> float:
-        """Get the prefix-probability of a trace."""
-
-    @property
-    @abstractmethod
-    def traces(self) -> Set[Word]:
-        """Get the traces."""
-
-    def elements(self) -> Iterator[Word]:
-        """Get the set of traces."""
-        for trace, count in self.items():
-            for _ in range(count):
-                yield trace
-
-    @abstractmethod
-    def items(self) -> Set[Tuple[Word, int]]:
-        """Get list of tuples (trace, count)."""
-
-    def update(self, sample: Sequence[Word]):
-        """Add items."""
-        for t in sample:
-            self.add(t)
-
-    def __len__(self) -> int:
-        """Get the length."""
-        return self.size
-
-    def __iter__(self):
-        """Get the traces."""
-        return iter(self.traces)
-
-    def __getitem__(self, item):
-        """Get the count."""
-        return self.get_counts(item)
-
-    def values(self) -> Sequence[int]:
-        """Get the values."""
-        return [v for _, v in self.items()]
-
-
-class NaiveMultiset(Multiset):
-    """Implement a multiset in a naive way - using a counter."""
-
-    def __init__(self):
-        """Initialize the multiset."""
-        self._counter = Counter()
-
-    def get_counts(self, trace: Word) -> int:
-        """Get counts."""
-        return self._counter[trace]
-
-    def add(self, t: Word, times: int = 1) -> None:
-        """Add an item to the multiset."""
-        self._counter.update({t: times})
-
-    @property
-    def size(self) -> int:
-        """Get the size of the multiset."""
-        return sum(self._counter.values())
-
-    def get_probability(self, t: Word) -> float:
-        """Get the probability of a trace."""
-        if self.size == 0:
-            return 0
-        return self._counter[t] / self.size
-
-    def get_prefix_probability(self, t: Word) -> float:
-        """Get the prefix-probability of a trace."""
-        if self.size == 0:
-            return 0
-        p = 0.0
-        for string in self._counter.keys():
-            for i in range(len(string) + 1):
-                prefix, suffix = string[:i], string[i:]
-                if prefix != t:
-                    continue
-                p += self._counter[prefix + suffix]
-
-        return p / self.size
-
-    @property
-    def traces(self) -> Set[Word]:
-        """Get the set of traces."""
-        return set(map(tuple, self._counter.keys()))
-
-    def items(self) -> Set[Tuple[Word, int]]:
-        """Get the traces and their counts."""
-        return set(self._counter.items())
-
-
 class PrefixTreeMultiset(Multiset):
     """A multi-set based on a prefix tree."""
 
@@ -301,7 +160,7 @@ class PrefixTreeMultiset(Multiset):
 
     def add(self, t: Word, times: int = 1) -> None:
         """Add an element."""
-        self._node.add(t)
+        self._node.add(t, times=times)
 
     @property
     def size(self) -> int:
@@ -329,9 +188,20 @@ class PrefixTreeMultiset(Multiset):
         """Get the set of traces."""
         return self._node.traces()
 
-    def items(self) -> Set[Tuple[Word, int]]:
+    def items(self) -> Iterator[Tuple[Word, int]]:
         """Get the traces and their counts."""
         return self._node.items()
+
+    def get_successors(self) -> Dict[Character, "ReadOnlyPrefixTreeMultiset"]:
+        """Get successors."""
+        successors: Dict[Character, Set[Node]] = {}
+        for next_char, next_node in self._node.next_transitions():
+            successors.setdefault(next_char, set()).add(next_node)
+
+        result: Dict[Character, ReadOnlyPrefixTreeMultiset] = {
+            k: ReadOnlyPrefixTreeMultiset(v) for k, v in successors.items()
+        }
+        return result
 
 
 class ReadOnlyPrefixTreeMultiset(Multiset):
@@ -344,6 +214,18 @@ class ReadOnlyPrefixTreeMultiset(Multiset):
         :param nodes: the nodes of the tree from where to start.
         """
         self._nodes = nodes if nodes is not None else {Node(parent=None)}
+
+    def get_successors(self) -> Dict[Character, "ReadOnlyPrefixTreeMultiset"]:
+        """Get successors."""
+        successors: Dict[Character, Set[Node]] = {}
+        for node in self._nodes:
+            for next_char, next_node in node.next_transitions():
+                successors.setdefault(next_char, set()).add(next_node)
+
+        result: Dict[Character, ReadOnlyPrefixTreeMultiset] = {
+            k: ReadOnlyPrefixTreeMultiset(v) for k, v in successors.items()
+        }
+        return result
 
     def get_counts(self, trace: Word) -> int:
         """Get counts."""
@@ -381,9 +263,9 @@ class ReadOnlyPrefixTreeMultiset(Multiset):
         """Get the set of traces."""
         return set.union(*[n.traces() for n in self._nodes])
 
-    def items(self) -> Set[Tuple[Word, int]]:
+    def items(self) -> Iterator[Tuple[Word, int]]:
         """Get the traces and their counts."""
-        return set.union(*[n.items() for n in self._nodes])
+        return itertools.chain.from_iterable([n.items() for n in self._nodes])
 
 
 def node_to_graphviz(node: Node, max_depth: int = 10) -> graphviz.Digraph:

@@ -23,6 +23,7 @@ def to_graphviz(
     """Transform a PDFA to Graphviz."""
     graph = graphviz.Digraph(format="svg")
     graph.node("fake", style="invisible")
+    graph.attr(rankdir="LR")
 
     states, filtered_transition_function = filter_transition_function(
         pdfa.transition_dict, lower_bound

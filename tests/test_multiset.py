@@ -2,8 +2,8 @@
 import pytest
 from hypothesis import given, settings, strategies
 
-from src.learn_pdfa.utils.multiset import (
-    NaiveMultiset,
+from src.learn_pdfa.utils.multiset.naive import NaiveMultiset
+from src.learn_pdfa.utils.multiset.tree import (
     PrefixTreeMultiset,
     ReadOnlyPrefixTreeMultiset,
 )
@@ -15,42 +15,72 @@ def test_multiset(multiset_class):
     multiset = multiset_class()
     assert multiset.size == 0
     assert multiset.traces == set()
-    assert multiset.items() == set()
-    assert multiset.get_probability((0, 1)) == 0.0
+    assert set(multiset.items()) == set()
+    assert multiset.get_probability((0, 1, -1)) == 0.0
     assert multiset.get_prefix_probability((0,)) == 0.0
 
     multiset.add((0,))
     assert multiset.size == 1
     assert multiset.traces == {(0,)}
-    assert multiset.items() == {((0,), 1)}
+    assert set(multiset.items()) == {((0,), 1)}
     assert multiset.get_probability((0,)) == 1.0
     assert multiset.get_prefix_probability((0,)) == 1.0
 
     multiset.add((0, 1))
     assert multiset.size == 2
-    assert multiset.traces == {(0,), (0, 1)}
-    assert multiset.items() == {((0,), 1), ((0, 1), 1)}
+    assert multiset.traces == {
+        (0,),
+        (
+            0,
+            1,
+        ),
+    }
+    assert set(multiset.items()) == {((0,), 1), ((0, 1), 1)}
     assert multiset.get_probability((0,)) == 0.5
-    assert multiset.get_probability((0, 1)) == 0.5
+    assert (
+        multiset.get_probability(
+            (
+                0,
+                1,
+            )
+        )
+        == 0.5
+    )
     assert multiset.get_prefix_probability((0,)) == 1.0
     assert multiset.get_prefix_probability((0, 1)) == 1 / 2
 
     multiset.add((0,))
     assert multiset.size == 3
     assert multiset.traces == {(0,), (0, 1)}
-    assert multiset.items() == {((0,), 2), ((0, 1), 1)}
+    assert set(multiset.items()) == {((0,), 2), ((0, 1), 1)}
     assert multiset.get_probability((0,)) == 2 / 3
-    assert multiset.get_probability((0, 1)) == 1 / 3
+    assert (
+        multiset.get_probability(
+            (
+                0,
+                1,
+            )
+        )
+        == 1 / 3
+    )
     assert multiset.get_prefix_probability((0,)) == 1.0
     assert multiset.get_prefix_probability((0, 1)) == 1 / 3
 
     multiset.add((1,))
     assert multiset.size == 4
     assert multiset.traces == {(0,), (1,), (0, 1)}
-    assert multiset.items() == {((0,), 2), ((1,), 1), ((0, 1), 1)}
+    assert set(multiset.items()) == {((0,), 2), ((1,), 1), ((0, 1), 1)}
     assert multiset.get_probability((0,)) == 1 / 2
     assert multiset.get_probability((1,)) == 1 / 4
-    assert multiset.get_probability((0, 1)) == 1 / 4
+    assert (
+        multiset.get_probability(
+            (
+                0,
+                1,
+            )
+        )
+        == 1 / 4
+    )
     assert multiset.get_prefix_probability((0,)) == 3 / 4
     assert multiset.get_prefix_probability((0, 1)) == 1 / 4
     assert multiset.get_prefix_probability((1,)) == 1 / 4
@@ -82,7 +112,7 @@ def test_naive_multiset_and_prefix_based_multiset_equivalent(samples):
 
     assert multiset_1.size == multiset_2.size == multiset_3.size
     assert multiset_1.traces == multiset_2.traces == multiset_2.traces
-    assert multiset_1.items() == multiset_2.items() == multiset_2.items()
+    assert set(multiset_1.items()) == set(multiset_2.items()) == set(multiset_2.items())
 
     for s in samples:
         s = tuple(s)

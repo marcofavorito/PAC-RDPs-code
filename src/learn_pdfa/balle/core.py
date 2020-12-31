@@ -1,31 +1,24 @@
 """Entrypoint for the algorithm."""
-
 import pprint
 from abc import ABC
+from copy import deepcopy
 from math import log, sqrt
-from typing import Dict, Optional, Sequence, Tuple, Type, cast
+from typing import Dict, Set, Tuple, Type, cast
 
 from src.helpers.base import normalize
 from src.learn_pdfa import logger
 from src.learn_pdfa.balle.params import BalleParams
-from src.learn_pdfa.utils.base import (
-    MultisetLike,
-    get_prefix_probability,
-    l_infty_norm,
-    prefix_distance_infty_norm,
-)
-from src.learn_pdfa.utils.multiset import Counter as ConcreteMultiset  # noqa: ignore
-from src.learn_pdfa.utils.multiset import (  # noqa: ignore
-    Multiset,
-    NaiveMultiset,
+from src.learn_pdfa.utils.base import MultisetLike, get_prefix_probability, size
+from src.learn_pdfa.utils.multiset.tree import (
     Node,
     PrefixTreeMultiset,
     ReadOnlyPrefixTreeMultiset,
-    node_to_graphviz,
 )
 from src.pdfa import PDFA
 from src.pdfa.base import FINAL_STATE, FINAL_SYMBOL
-from src.types import Character, State, TransitionFunctionDict, Word
+from src.types import Character, State, TransitionFunctionDict
+
+ConcreteMultiset = PrefixTreeMultiset
 
 
 def learn_pdfa(**kwargs) -> PDFA:
@@ -43,62 +36,11 @@ def learn_pdfa(**kwargs) -> PDFA:
     return automaton
 
 
-def extended_transition_fun(
-    transitions: Dict[State, Dict[Character, State]], word: Word
-) -> Optional[int]:
-    """
-    Compute the successor state from a word.
-
-    :param transitions: the transitions indexed by state and character.
-    :param word: the word.
-    :return:
-    """
-    current_state: Optional[int] = 0
-    for c in word:
-        if current_state is None:
-            return None
-        current_state = transitions.get(current_state, {}).get(c)
-    return current_state
-
-
 def _compute_threshold(m_u, m_v, s_u, s_v, delta):
+    """Compute distinctness threshold."""
     n1 = 2 / min(m_u, m_v)
     n2 = log(8 * (s_u + s_v) / delta)
     return sqrt(n1 * n2)
-
-
-def test_distinct(
-    multiset_candidate: MultisetLike, multiset_safe: MultisetLike, params: BalleParams
-) -> Tuple[float, float]:
-    """
-    Test whether a candidate state is distinct from a safe node.
-
-    :param multiset_candidate: the multiset of the candidate node.
-    :param multiset_safe: the multiset of the safe node.
-    :param params: the algorithm parameters.
-    :return: a pair of floats: the distance and the distinctness threshold
-    """
-    cardinality_candidate = sum(multiset_candidate.values())
-    cardinality_safe = sum(multiset_safe.values())
-    # +1 for the empty trace
-    prefixes_candidate = sum(
-        [(len(trace) + 1) * count for trace, count in multiset_candidate.items()]
-    )
-    prefixes_safe = sum(
-        [(len(trace) + 1) * count for trace, count in multiset_safe.items()]
-    )
-    threshold = _compute_threshold(
-        cardinality_candidate,
-        cardinality_safe,
-        prefixes_candidate,
-        prefixes_safe,
-        params.delta_0,
-    )
-    distance = max(
-        l_infty_norm(multiset_candidate, multiset_safe),
-        prefix_distance_infty_norm(multiset_candidate, multiset_safe),
-    )
-    return distance, threshold
 
 
 class Learner(ABC):
@@ -113,215 +55,254 @@ class Learner(ABC):
         """Get the parameters."""
         return self._params
 
-    def _initialize_variables(self):
-        # global variables
-        self.initial_state = 0
-        self.vertices = {self.initial_state}
-        self.transitions: Dict[int, Dict[Character, int]] = {}
-        self.alphabet = set(range(self.params.alphabet_size))
-        self.done = False
-        self.iteration = 0
-        self.iteration_upper_bound = self.params.n * self.params.alphabet_size
-        self.samples = []
-        self.multiset_manager: Optional[SampleMultisetManager] = None
-
-    def _sample(self):
-        """Do the sampling."""
-        logger.info("Generating the sample.")
-        generator = self.params.sample_generator
-        self.samples = generator.sample(n=self.params.nb_samples, with_final=True)
-        self.samples = list(map(lambda x: tuple(x), self.samples))
-        self.expected_trace_length = sum(map(len, self.samples)) / len(self.samples)
-        logger.info("Populate root multiset.")
-
-        self.multiset_manager = SampleMultisetManager(self.params, self.samples)
-
     def learn(self) -> PDFA:
         """
         Do the learning.
 
         This is the main entry-point of the class.
         """
-        self._initialize_variables()
-        self._sample()
-        while not self.done:
-            self._do_iteration()
+        manager = SampleMultisetManager(self.params, ConcreteMultiset)
+        graph = Graph(self.params)
+        graph.add_vertex(0, manager.main_multiset)
+        candidate_nodes = CandidateNodesCalculator(manager.multiset_cls, manager, graph)
+        while not candidate_nodes.do_iteration():
+            continue
+        return PDFAConstructor(graph, manager).get()
 
-        self._complete_graph()
-        self._compute_probabilities()
-        return PDFA(len(self.vertices), len(self.alphabet), self.pdfa_transitions)
 
-    def _do_iteration(self):
-        """Do one iteration."""
-        logger.info(f"Iteration {self.iteration}")
+class SampleMultisetManager:
+    """Sample multiset manager."""
 
-        # compute candidate nodes. If none, terminate.
-        self.multiset_manager.reset_candidate_nodes(
-            self.vertices, self.alphabet, self.transitions
+    def __init__(self, params: BalleParams, multiset_cls: Type[MultisetLike]):
+        """Initialize."""
+        self.params = params
+        self.multiset_cls = multiset_cls
+        self.main_multiset = self.multiset_cls()
+        self._sample_and_update()
+
+    def _sample_and_update(self):
+        """Do the sampling."""
+        logger.info("Generating the sample.")
+        generator = self.params.sample_generator
+        samples = generator.sample(n=self.params.nb_samples, with_final=True)
+        samples = list(map(lambda x: tuple(x), samples))
+        self.average_trace_length = sum(map(len, samples)) / len(samples)
+        logger.info(f"Average trace length: {self.average_trace_length}.")
+        logger.info("Populate root multiset.")
+        self.main_multiset.update(samples)
+
+
+class Graph:
+    """Represent a PDFA subgraph."""
+
+    def __init__(self, params: BalleParams):
+        """Initialize."""
+        self.params = params
+        self.initial_state = 0
+        self.vertices = {self.initial_state}
+        self.transitions: Dict[int, Dict[Character, int]] = {}
+        self.alphabet = set(range(self.params.alphabet_size))
+
+        self.vertex2multiset: Dict[int, MultisetLike] = {}
+
+    def add_vertex(self, new_vertex, multiset):
+        """Add a vertex to the multiset manager."""
+        self.vertex2multiset[new_vertex] = multiset
+
+
+class PDFAConstructor:
+    """Construct the PDFA."""
+
+    def __init__(self, graph: Graph, sample: SampleMultisetManager):
+        """
+        Initialize PDFA constructor.
+
+        :param graph: the graph object.
+        :param sample: the sample manager.
+        """
+        self.graph = graph
+        self.sample = sample
+
+        self.params = self.sample.params
+
+    def get(self) -> PDFA:
+        """Build the PDFA."""
+        new_transitions: Dict[int, Dict[Character, int]] = deepcopy(
+            self.graph.transitions
         )
+        new_vertices: Set[int] = deepcopy(self.graph.vertices)
+        self._complete_graph(new_vertices, new_transitions)
+        pdfa_transitions = self._compute_probabilities(new_transitions)
+        return PDFA(len(new_vertices), len(self.graph.alphabet), pdfa_transitions)
 
-        no_candidate_nodes = (
-            len(self.multiset_manager.candidate_nodes_to_transitions) == 0
-        )
-        if no_candidate_nodes:
-            self.done = True
-            return
+    def _add_ground_node(
+        self, vertices: Set[int], transitions: Dict[int, Dict[Character, int]]
+    ):
+        """Add a ground node."""
+        ground_node = len(vertices)
+        ground_node_used = False
 
-        # compute multisets
-        logger.debug("Computing multisets...")
-        self.multiset_manager.compute_multisets(self.transitions)
+        for vertex in vertices:
+            transitions_from_vertex = transitions.get(vertex, {})
+            for character in self.graph.alphabet:
+                if character not in transitions_from_vertex:
+                    ground_node_used = True
+                    transitions_from_vertex[character] = ground_node
+            transitions[vertex] = transitions_from_vertex
 
-        (
-            self.chosen_candidate_node,
-            self.biggest_multiset,
-        ) = self.multiset_manager.biggest_multiset()
+        if ground_node_used:
+            vertices.add(ground_node)
+            transitions[ground_node] = {}
+            for character in self.graph.alphabet:
+                transitions[ground_node][character] = ground_node
 
-        if sum(self.biggest_multiset.values()) == 0:
-            logger.info("Biggest multiset has cardinality 0, done")
-            self.done = True
-            return
-
-        # compute non-distinct vertices, and add a new state or just a new edge
-        logger.info("Compute non-distinct vertices...")
-        self._compute_non_distinct_vertices()
-        logger.info("Add new state/new node")
-        self._add_new_state_or_edge()
-
-        # end of iteration
-        self.iteration += 1
-        self.done = self.iteration >= self.iteration_upper_bound
-
-    def _compute_non_distinct_vertices(self):
-        (
-            self.start_state,
-            self.character,
-        ) = self.multiset_manager.candidate_nodes_to_transitions[
-            self.chosen_candidate_node
-        ]
-        self.non_distinct_vertices: Dict[int, Tuple[float, float]] = {}
-        for v in self.vertices:
-            distance, threshold = self.multiset_manager.test_distinct(
-                self.chosen_candidate_node, v
-            )
-            is_distinct = distance > threshold
-            if not is_distinct:
-                self.non_distinct_vertices[v] = (distance, threshold)
-
-    def _add_new_state_or_edge(self):
-        all_nodes_are_distinct = len(self.non_distinct_vertices) == 0
-        maximum_nb_states_reached = len(self.vertices) == self.params.n
-        if all_nodes_are_distinct and not maximum_nb_states_reached:
-            # we've got a new node
-            new_vertex = len(self.vertices)
-            self.vertices.add(new_vertex)
-            self.multiset_manager.add_vertex(new_vertex, self.biggest_multiset)
-            self.transitions.setdefault(self.start_state, {})[
-                self.character
-            ] = new_vertex
-        else:
-            # pick a safe node that has not distinguished from best candidate.
-            # For deterministic behaviour, pick the smallest
-            sorted_non_distinct_vertices = sorted(self.non_distinct_vertices.keys())
-            if len(sorted_non_distinct_vertices) > 1:
-                logger.warning(
-                    f"More than one non-distinct vertex: {sorted_non_distinct_vertices}"
-                )
-                logger.warning(
-                    f"Distances and thresholds: {pprint.pformat(self.non_distinct_vertices)}"
-                )
-            old_vertex = sorted_non_distinct_vertices[0]
-            self.transitions.setdefault(self.start_state, {})[
-                self.character
-            ] = old_vertex
-
-    def _complete_graph(self):
+    def _complete_graph(
+        self, vertices: Set[int], transitions: Dict[int, Dict[Character, int]]
+    ):
         """
         Complete graph.
 
         Add a ground node (only if needed, and if allowed by params), and a final node.
         """
         if self.params.with_ground:
-            self._add_ground_node()
+            self._add_ground_node(vertices, transitions)
 
         final_node = FINAL_STATE
-        for vertex in self.vertices:
-            self.transitions.setdefault(vertex, {})[FINAL_SYMBOL] = final_node
-
-    def _compute_probabilities(self):
-        """Given vertices, transitions and its multisets, estimate edge probabilities."""
-        self.pdfa_transitions: TransitionFunctionDict = {}
-
-        # compute gammas
-        for start, out_transitions in self.transitions.items():
-            self.pdfa_transitions[start] = {}
-            for character, next_state in out_transitions.items():
-                probability = self._compute_edge_probability(start, character)
-                self.pdfa_transitions[start][character] = (next_state, probability)
-
-        # normalize
-        self.pdfa_transitions = normalize(self.pdfa_transitions)
+        for vertex in vertices:
+            transitions.setdefault(vertex, {})[FINAL_SYMBOL] = final_node
 
     def _compute_edge_probability(self, state: int, character: int):
         """Given state and character, compute probability."""
-        multiset = self.multiset_manager.vertex2multiset.get(state, ConcreteMultiset())  # type: ignore
+        multiset = self.graph.vertex2multiset.get(state, ConcreteMultiset())  # type: ignore
         size = sum(multiset.values())
         smoothing_probability = (
-            self.params.get_gamma_min(self.expected_trace_length)
+            self.params.get_gamma_min(self.sample.average_trace_length)
             if self.params.with_smoothing
             else 0.0
         )
         if size == 0:
-            return self._params.get_gamma_min(self.expected_trace_length)
+            return self.params.get_gamma_min(self.sample.average_trace_length)
         char_prob = get_prefix_probability(multiset, (character,))
         factor = 1 - (self.params.alphabet_size + 1) * smoothing_probability
         return char_prob * factor + smoothing_probability
 
-    def _add_ground_node(self):
-        """Add a ground node."""
-        ground_node = len(self.vertices)
-        ground_node_used = False
+    def _compute_probabilities(self, transitions: Dict[int, Dict[Character, int]]):
+        """Given vertices, transitions and its multisets, estimate edge probabilities."""
+        pdfa_transitions: TransitionFunctionDict = {}
 
-        for vertex in self.vertices:
-            transitions_from_vertex = self.transitions.get(vertex, {})
-            for character in self.alphabet:
-                if character not in transitions_from_vertex:
-                    ground_node_used = True
-                    transitions_from_vertex[character] = ground_node
-            self.transitions[vertex] = transitions_from_vertex
+        # compute gammas
+        for start, out_transitions in transitions.items():
+            pdfa_transitions[start] = {}
+            for character, next_state in out_transitions.items():
+                probability = self._compute_edge_probability(start, character)
+                pdfa_transitions[start][character] = (next_state, probability)
 
-        if ground_node_used:
-            self.vertices.add(ground_node)
-            self.transitions[ground_node] = {}
-            for character in self.alphabet:
-                self.transitions[ground_node][character] = ground_node
+        # normalize
+        pdfa_transitions = normalize(pdfa_transitions)
+        return pdfa_transitions
 
 
-class SampleMultisetManager:
-    """Sample multiset manager."""
+class CandidateNodesCalculator:
+    """Compute candidate nodes."""
 
-    MULTISET_CLASS: Type[MultisetLike] = NaiveMultiset
+    def __init__(
+        self,
+        multiset_cls: Type[MultisetLike],
+        multiset_mgr: SampleMultisetManager,
+        graph: Graph,
+    ):
+        """
+        Initialize the candidate node calculator.
 
-    def __init__(self, params: BalleParams, sample: Sequence[Word]):
-        """Initialize."""
-        self.params = params
-        self.main_multiset = self.MULTISET_CLASS()
-        self.main_multiset.update(sample)
+        :param multiset_cls: the multiset class.
+        :param multiset_mgr: the multiset to use.
+        :param graph: the graph object.
+        """
+        self.multiset_cls = multiset_cls
+        self.multiset_mgr = multiset_mgr
+        self.params = multiset_mgr.params
+        self.graph = graph
 
-        self.vertex2multiset: Dict[int, MultisetLike] = {}
-        self.vertex2multiset[0] = self.main_multiset
-
-        # temporary
+        self.iteration = 0
+        self.iteration_upper_bound = self.params.n * self.params.alphabet_size
         self.candidate_nodes_by_transitions: Dict[Tuple[State, Character], int] = {}
         self.candidate_nodes_to_transitions: Dict[int, Tuple[State, Character]] = {}
-        self.multisets: Dict[int, ConcreteMultiset] = {}
+        self.multisets: Dict[int, MultisetLike] = {}
 
-    def reset_candidate_nodes(self, vertices, alphabet, transitions: Dict):
+    def do_iteration(self) -> bool:
+        """
+        Do one iteration.
+
+        :return: False if the current iteration failed, else True.
+        """
+        logger.info(f"Iteration {self.iteration}")
+        done = self._reset_and_check_if_done()
+        if done:
+            return True
+
+        (
+            chosen_candidate_node,
+            biggest_multiset,
+        ) = self.compute_multisets_and_get_biggest()
+        if sum(biggest_multiset.values()) == 0:
+            logger.info("Biggest multiset has cardinality 0, done")
+            return True
+
+        non_distinct_vertices = self._compute_non_distinct_vertices(
+            chosen_candidate_node
+        )
+        self._add_new_state_or_edge(chosen_candidate_node, non_distinct_vertices)
+        # end of iteration
+        self.iteration += 1
+        done = self.iteration >= self.iteration_upper_bound
+        return done
+
+    def _add_new_state_or_edge(self, candidate_node, non_distinct_vertices):
+        (
+            start_state,
+            character,
+        ) = self.candidate_nodes_to_transitions[candidate_node]
+        biggest_multiset = self.multisets[candidate_node]
+        all_nodes_are_distinct = len(non_distinct_vertices) == 0
+        maximum_nb_states_reached = (
+            len(self.graph.vertices) == self.multiset_mgr.params.n
+        )
+        if all_nodes_are_distinct and not maximum_nb_states_reached:
+            # we've got a new node
+            new_vertex = len(self.graph.vertices)
+            self.graph.vertices.add(new_vertex)
+            self.graph.add_vertex(new_vertex, biggest_multiset)
+            self.graph.transitions.setdefault(start_state, {})[character] = new_vertex
+        else:
+            # pick a safe node that has not distinguished from best candidate.
+            # For deterministic behaviour, pick the smallest
+            sorted_non_distinct_vertices = sorted(non_distinct_vertices)
+            if len(sorted_non_distinct_vertices) > 1:
+                logger.warning(
+                    f"More than one non-distinct vertex: {sorted_non_distinct_vertices}"
+                )
+                logger.warning(
+                    f"Distances and thresholds: {pprint.pformat(non_distinct_vertices)}"
+                )
+            old_vertex = sorted_non_distinct_vertices[0]
+            self.graph.transitions.setdefault(start_state, {})[character] = old_vertex
+
+    def _reset_and_check_if_done(self) -> bool:
+        """Reset the state, and check if there are candidate nodes."""
+        self._reset_candidate_nodes(
+            self.graph.vertices, self.graph.alphabet, self.graph.transitions
+        )
+        return len(self.candidate_nodes_to_transitions) == 0
+
+    def _reset_candidate_nodes(self, vertices, alphabet, transitions: Dict):
         """Reset multisets."""
         self.candidate_nodes_by_transitions = {}
         self.candidate_nodes_to_transitions = {}
         self.multisets = {}
+        self._recompute_candidate_nodes(vertices, alphabet, transitions)
 
-        # recompute candidate nodes
+    def _recompute_candidate_nodes(self, vertices, alphabet, transitions):
+        """Recompute candidate nodes."""
         for v in vertices:
             for c in alphabet:
                 if transitions.get(v, {}).get(c) is None:  # if transition undefined
@@ -331,52 +312,12 @@ class SampleMultisetManager:
                     )
                     self.candidate_nodes_to_transitions[new_candidate] = transition
                     self.candidate_nodes_by_transitions[transition] = new_candidate
-                    self.multisets[new_candidate] = self.MULTISET_CLASS()  # type: ignore
 
-    def compute_multisets(self, transitions):
-        """Compute multisets for the current iteration."""
-        for word in self.main_multiset.elements():
-            # s is always non-empty
-            for i in range(len(word)):
-                r, sigma, t = word[:i], word[i], word[i + 1 :]
-                q = extended_transition_fun(transitions, r)
-                if q is None:
-                    continue
-                transition = (q, sigma)
-                if transition in self.candidate_nodes_by_transitions:
-                    candidate_node = self.candidate_nodes_by_transitions[transition]
-                    self.multisets[candidate_node].update([tuple(t)])
-
-    def biggest_multiset(self) -> Tuple[int, ConcreteMultiset]:
-        """Compute the biggest multiset."""
-        return max(self.multisets.items(), key=lambda x: sum(x[1].values()))
-
-    def test_distinct(self, chosen_candidate_node: int, v: int):
-        """Test distinctness of two vertices."""
-        distance, threshold = test_distinct(
-            self.multisets[chosen_candidate_node], self.vertex2multiset[v], self.params
-        )
-        return distance, threshold
-
-    def add_vertex(self, new_vertex, biggest_multiset):
-        """Add a vertex to the multiset manager."""
-        self.vertex2multiset[new_vertex] = biggest_multiset
-
-
-class SampleMultisetManagerWithPrefix(SampleMultisetManager):
-    """Multiset manager, but with Prefix trees."""
-
-    MULTISET_CLASS = PrefixTreeMultiset
-
-    def reset_candidate_nodes(self, *args):
-        """Reset multisets."""
-        super().reset_candidate_nodes(*args)
-        self.multisets: Dict[int, Multiset] = {}
-
-    def compute_multisets(self, transitions):
-        """DFS, non-recursive."""
-        self.main_multiset = cast(PrefixTreeMultiset, self.main_multiset)
-        root = self.main_multiset._node
+    def compute_multisets_and_get_biggest(self) -> Tuple[int, MultisetLike]:
+        """Compute multisets for the current iteration, and get biggest multiset."""
+        main_multiset = cast(PrefixTreeMultiset, self.multiset_mgr.main_multiset)
+        transitions = self.graph.transitions
+        root = main_multiset._node
         pdfa_initial_state = 0
 
         def _visit(node: Node, state: State):
@@ -395,3 +336,82 @@ class SampleMultisetManagerWithPrefix(SampleMultisetManager):
                     _visit(n, outgoing_from_last[c])
 
         _visit(root, pdfa_initial_state)
+        return self._get_biggest_multiset()
+
+    def _get_biggest_multiset(self) -> Tuple[int, MultisetLike]:
+        """Compute the biggest multiset."""
+        return max(
+            self.multisets.items(),
+            key=lambda x: sum(x[1].values()),
+            default=(-1, self.multiset_cls()),
+        )
+
+    def _compute_non_distinct_vertices(self, chosen_candidate_node):
+        non_distinct_vertices: Dict[int, float] = {}
+        for v in self.graph.vertices:
+            # TODO remove
+            """
+            m1, m2 = self.multisets[chosen_candidate_node], self.graph.vertex2multiset[v]
+            distance, threshold = test_distinct(m1, m2, self.multiset_mgr.params)
+            is_distinct = distance > threshold
+            if not is_distinct:
+            """
+            is_distinct = self.test_distinct(chosen_candidate_node, v)
+            if not is_distinct:
+                # TODO sort by distance/threshold
+                non_distinct_vertices[v] = 0.0
+        return non_distinct_vertices
+
+    def test_distinct(self, chosen_candidate_node: int, v: int):
+        """Test distinctness of two vertices."""
+        multiset_candidate = self.multisets[chosen_candidate_node]
+        multiset_safe = self.graph.vertex2multiset[v]
+        prefixes_candidate = sum(
+            [(len(trace) + 1) * count for trace, count in multiset_candidate.items()]
+        )
+        prefixes_safe = sum(
+            [(len(trace) + 1) * count for trace, count in multiset_safe.items()]
+        )
+        threshold = _compute_threshold(
+            size(multiset_candidate),
+            size(multiset_safe),
+            prefixes_candidate,
+            prefixes_safe,
+            self.params.delta_0,
+        )
+
+        return self.test_similar(multiset_candidate, 1.0, multiset_safe, 1.0, threshold)  # type: ignore
+
+    def test_similar(
+        self, m1: PrefixTreeMultiset, p1, m2: PrefixTreeMultiset, p2, t
+    ) -> bool:
+        """
+        Test that two multisets are similar.
+
+        :param m1: the first multiset.
+        :param p1: the probability score so far.
+        :param m2: the second multiset.
+        :param p2: the probability score so far.
+        :param t: the threshold.
+        :return: True if distinct, False otherwise.
+        """
+        if abs(p1 - p2) > t:
+            return True
+
+        if m1 is None or m2 is None:
+            return False
+
+        m1_succ = m1.get_successors()
+        m2_succ = m2.get_successors()
+
+        next_chars = set(m1_succ.keys()).union(set(m2_succ.keys()))
+
+        for next_char in next_chars:
+            next_p1 = p1 * m1.get_prefix_probability([next_char])
+            next_p2 = p2 * m2.get_prefix_probability([next_char])
+            next_m1 = m1_succ.get(next_char, None)
+            next_m2 = m2_succ.get(next_char, None)
+            result = self.test_similar(next_m1, next_p1, next_m2, next_p2, t)  # type: ignore
+            if result is True:
+                return True
+        return False

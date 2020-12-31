@@ -7,6 +7,8 @@ import numpy as np
 
 from src.helpers.base import assert_
 from src.pdfa.helpers import (
+    FINAL_STATE,
+    FINAL_SYMBOL,
     _check_ergodicity,
     _check_is_legal_character,
     _check_is_legal_state,
@@ -14,9 +16,6 @@ from src.pdfa.helpers import (
     _check_transitions_are_legal,
 )
 from src.types import Character, State, TransitionFunctionDict, Word
-
-FINAL_STATE = -1
-FINAL_SYMBOL = -1
 
 
 @dataclass(frozen=True)
@@ -28,6 +27,7 @@ class PDFA:
     - The alphabet is the set of integers {0, ..., alphabet_size - 1}
     - The initial state is always 0
     - The final state is always -1
+    - The final symbol is always -1
     - The transition function is a nested dictionary:
         - at the first level, we have states as keys and the dict of outgoing transition_dict as values
         - a dict of outgoing transition_dict has characters as keys and a tuple of next state and probability
@@ -100,6 +100,11 @@ class PDFA:
         return FINAL_STATE
 
     @property
+    def final_symbol(self) -> State:
+        """Get the final symbol."""
+        return FINAL_SYMBOL
+
+    @property
     def states(self) -> Set[State]:
         """Get the set of states."""
         return set(range(self.nb_states))
@@ -131,14 +136,6 @@ class PDFA:
             current_state = next_state
             result *= probability
 
-        last_char_was_final = word[-1] == FINAL_SYMBOL
-        if not last_char_was_final and current_state != self.final_state:
-            final_state, final_prob = self.transition_dict.get(current_state, {}).get(
-                FINAL_SYMBOL, (None, 1.0)
-            )
-            result *= final_prob
-            if final_state is not None:
-                current_state = final_state
         return 0.0 if current_state != self.final_state else result
 
     def sample(self) -> Word:
