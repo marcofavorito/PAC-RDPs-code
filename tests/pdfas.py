@@ -1,5 +1,4 @@
 """Definition of PDFAs."""
-import pytest
 
 from src.pdfa import PDFA
 from src.pdfa.base import FINAL_STATE
@@ -22,12 +21,6 @@ def make_pdfa_one_state(p: float = 0.3):
     return automaton
 
 
-@pytest.fixture
-def pdfa_one_state():
-    """Get a PDFA with one state."""
-    return make_pdfa_one_state()
-
-
 def make_pdfa_two_state(p1: float = 0.4, p2: float = 0.7):
     """Make a PDFA with two states, for testing purposes."""
     automaton = PDFA(
@@ -46,12 +39,6 @@ def make_pdfa_two_state(p1: float = 0.4, p2: float = 0.7):
         },
     )
     return automaton
-
-
-@pytest.fixture
-def pdfa_two_states():
-    """Get a PDFA with two states."""
-    return make_pdfa_two_state()
 
 
 def make_pdfa_sequence_three_states(
@@ -88,8 +75,30 @@ def make_pdfa_sequence_three_states(
     return automaton
 
 
-@pytest.fixture
-def pdfa_sequence_three_states(request):
-    """Get a PDFA with two states."""
-    p1, p2, p3, stop_probability = request.param
-    return make_pdfa_sequence_three_states(p1, p2, p3, stop_probability)
+def make_reber_grammar() -> PDFA:
+    """
+    Make PDFA for Reber grammar [1].
+
+    Order of characters: "BTPSXV"
+
+    - [1] R. C. Carrasco and J. Oncina. Learning deterministic regular
+          grammars from stochastic samples in polynomial time.
+          ITA, 33(1):1–20, 1999
+    """
+    nb_states = 7
+    alphabet_size = 6
+
+    automaton = PDFA(
+        nb_states,
+        alphabet_size,
+        {
+            0: {0: (1, 1.0)},
+            1: {1: (2, 0.5), 2: (3, 0.5)},
+            2: {3: (2, 0.6), 4: (4, 0.4)},
+            3: {1: (3, 0.7), 5: (5, 0.3)},
+            4: {4: (3, 0.5), 3: (6, 0.5)},
+            5: {2: (4, 0.5), 5: (6, 0.5)},
+            6: {FINAL_SYMBOL: (FINAL_STATE, 1.0)},
+        },
+    )
+    return automaton

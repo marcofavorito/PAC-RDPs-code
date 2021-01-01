@@ -83,9 +83,12 @@ class SampleMultisetManager:
     def _sample_and_update(self):
         """Do the sampling."""
         logger.info("Generating the sample.")
-        generator = self.params.sample_generator
-        samples = generator.sample(n=self.params.nb_samples, with_final=True)
-        samples = list(map(lambda x: tuple(x), samples))
+        if self.params.sample_generator:
+            generator = self.params.sample_generator
+            samples = generator.sample(n=self.params.nb_samples, with_final=True)
+            samples = list(map(lambda x: tuple(x), samples))
+        else:
+            samples = self.params.dataset
         self.average_trace_length = sum(map(len, samples)) / len(samples)
         logger.info(f"Average trace length: {self.average_trace_length}.")
         logger.info("Populate root multiset.")

@@ -9,7 +9,7 @@ from contextlib import contextmanager
 import pytest
 
 # this is to import fixtures
-from tests.pdfas import (  # noqa: E402, F401
+from tests.fixtures import (  # noqa: E402, F401
     pdfa_one_state,
     pdfa_sequence_three_states,
     pdfa_two_states,

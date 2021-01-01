@@ -1,9 +1,11 @@
 """Params class for Balle's algorithm."""
 
 from dataclasses import dataclass
+from typing import Collection, Optional
 
 from src.helpers.base import assert_
 from src.learn_pdfa.utils.generator import Generator
+from src.types import Word
 
 
 @dataclass(frozen=True)
@@ -20,10 +22,11 @@ class BalleParams:
     n: the upper bound of the number of states.
     """
 
-    sample_generator: Generator
-    nb_samples: int
-    n: int
-    alphabet_size: int
+    sample_generator: Optional[Generator] = None
+    dataset: Optional[Collection[Word]] = None
+    nb_samples: int = 10000
+    n: int = 10
+    alphabet_size: int = 5
     delta: float = 0.1
     epsilon: float = 0.1
     with_smoothing: bool = False
@@ -34,7 +37,11 @@ class BalleParams:
         """Validate inputs."""
         assert_(
             0 < self.delta < 1.0,
-            "Delta must be a non-zero probaility.",
+            "Delta must be a non-zero probability.",
+        )
+        assert_(
+            ((self.dataset is None) != (self.sample_generator is None)),
+            "Only one between dataset and sample generator must be specified.",
         )
 
     @property

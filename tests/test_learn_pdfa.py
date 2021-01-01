@@ -10,6 +10,7 @@ from tests.pdfas import (
     make_pdfa_one_state,
     make_pdfa_sequence_three_states,
     make_pdfa_two_state,
+    make_reber_grammar,
 )
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
@@ -19,7 +20,7 @@ from src.pdfa.helpers import FINAL_SYMBOL
 
 BALLE_CONFIG = dict(
     algorithm=Algorithm.BALLE,
-    nb_samples=5000,
+    nb_samples=10000,
     delta=0.1,
     n=10,
 )
@@ -36,8 +37,6 @@ PALMER_CONFIG = dict(
     m0_max_debug=100000 / 10,
 )
 
-RTOL = 0.4
-
 
 class BaseTestLearnPDFA:
     """Base test class for PDFA learning."""
@@ -46,6 +45,7 @@ class BaseTestLearnPDFA:
     CONFIG: Dict = BALLE_CONFIG
     ALPHABET_LEN = 3
     OVERWRITE_CONFIG: Dict = {}
+    RTOL = 0.1
 
     @classmethod
     @abstractmethod
@@ -86,7 +86,7 @@ class BaseTestLearnPDFA:
         actual_trace = tuple(trace) + (FINAL_SYMBOL,)
         actual_prob = self.actual.get_probability(actual_trace)
         expected_prob = self.expected.get_probability(actual_trace)
-        assert np.isclose(expected_prob, actual_prob, rtol=RTOL)
+        assert np.isclose(expected_prob, actual_prob, rtol=self.RTOL)
 
 
 class TestOneState(BaseTestLearnPDFA):
@@ -116,9 +116,20 @@ class TestSequenceThreeStates(BaseTestLearnPDFA):
 
     PROBABILITIES = (0.4, 0.3, 0.2, 0.1)
     ALPHABET_LEN = 3
-    OVERWRITE_CONFIG = dict(nb_samples=75000)
+    OVERWRITE_CONFIG = dict(nb_samples=150000)
 
     @classmethod
     def _make_automaton(cls) -> PDFA:
         """Make automaton."""
         return make_pdfa_sequence_three_states(*cls.PROBABILITIES)
+
+
+class TestReber(BaseTestLearnPDFA):
+    """Test PDFA learning on Reber PDFA."""
+
+    ALPHABET_LEN = 6
+
+    @classmethod
+    def _make_automaton(cls) -> PDFA:
+        """Make automaton."""
+        return make_reber_grammar()
