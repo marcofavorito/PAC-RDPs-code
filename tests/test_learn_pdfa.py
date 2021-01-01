@@ -76,7 +76,7 @@ class BaseTestLearnPDFA:
         trace=strategies.lists(
             strategies.integers(min_value=0, max_value=ALPHABET_LEN - 1),
             min_size=0,
-            max_size=100,
+            max_size=20,
         )
     )
     def test_equivalence(self, trace):
