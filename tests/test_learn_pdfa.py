@@ -45,6 +45,7 @@ class BaseTestLearnPDFA:
     CONFIG: Dict = BALLE_CONFIG
     ALPHABET_LEN = 3
     OVERWRITE_CONFIG: Dict = {}
+    WITH_SMOOTHING = False
     RTOL = 0.1
 
     @classmethod
@@ -65,12 +66,13 @@ class BaseTestLearnPDFA:
         cls.actual = learn_pdfa(
             sample_generator=generator,
             alphabet_size=cls.expected.alphabet_size,
+            with_smoothing=cls.WITH_SMOOTHING,
             **config
         )
 
     def test_same_nb_states(self):
         """Test same number of states."""
-        assert len(self.expected.states) == len(self.actual.states)
+        assert len(self.actual.states) == len(self.expected.states)
 
     @given(
         trace=strategies.lists(

@@ -13,12 +13,11 @@ class Generator(ABC):
     """Wrapper to a PDFA to make sampling as a function call."""
 
     @abstractmethod
-    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
+    def sample(self, n: int = 1) -> Sequence[Word]:
         """
         Generate a sample of size n.
 
         :param n: the size of the sample.
-        :param with_final: if True, append final symbol to each sampled word.
         :return: the list of sampled traces.
         """
 
@@ -54,24 +53,22 @@ class MultiprocessedGenerator(Generator):
         self._nb_processes = nb_processes
         self._pool = Pool(nb_processes)
 
-    def __call__(self, with_final: bool = False):
+    def __call__(self):
         """Sample a trace."""
-        return self._generator.sample(with_final=with_final)
+        return self._generator.sample()
 
     @staticmethod
-    def _job(
-        n: int, with_final: bool, sample_func: Callable[[int, bool], Sequence[Word]]
-    ):
-        return [sample_func(1, with_final)[0] for _ in range(n)]
+    def _job(n: int, sample_func: Callable[[int], Sequence[Word]]):
+        return [sample_func(1)[0] for _ in range(n)]
 
-    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
+    def sample(self, n: int = 1) -> Sequence[Word]:
         """Generate a sample, multiprocessed."""
         n_per_process = ceil(n / self._nb_processes)
         sample = []
 
         results = [
             self._pool.apply_async(
-                self._job, args=[n_per_process, with_final, self._generator.sample]
+                self._job, args=[n_per_process, self._generator.sample]
             )
             for _ in range(self._nb_processes)
         ]

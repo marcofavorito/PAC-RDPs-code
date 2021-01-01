@@ -1,5 +1,5 @@
 """Params class for Balle's algorithm."""
-
+import pprint
 from dataclasses import dataclass
 from typing import Collection, Optional
 
@@ -8,7 +8,7 @@ from src.learn_pdfa.utils.generator import Generator
 from src.types import Word
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class BalleParams:
     """
     Parameters for the (Balel et al., 2013) learning algorithm.
@@ -60,3 +60,20 @@ class BalleParams:
         :return:
         """
         return self.epsilon / 4 / expected_length / (self.alphabet_size + 1)
+
+    def __repr__(self):
+        """Get the representation."""
+        return pprint.pformat(
+            {
+                "sample_generator": self.sample_generator,
+                "dataset_size": len(self.dataset),
+                "nb_samples": self.nb_samples,
+                "n": self.n,
+                "alphabet_size": self.alphabet_size,
+                "delta": self.delta,
+                "epsilon": self.epsilon,
+                "with_smoothing": self.with_smoothing,
+                "with_ground": self.with_ground,
+                "with_infty_norm": self.with_infty_norm,
+            }
+        )

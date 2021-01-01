@@ -12,19 +12,17 @@ from src.pdfa.base import FINAL_SYMBOL, PDFA
 from src.types import Character, State, Word
 
 
-class RDPGenerator(Generator):
-    """Generate a trace against."""
+class AbstractRDPGenerator:
+    """Abstract RDP generator from gym environment."""
 
     def __init__(
         self,
         env: gym.Env,
         nb_rewards: int,
-        policy: Callable,
         stop_probability: float = 0.05,
     ):
         """Initialize the RDP generator."""
         self._env = env
-        self._policy = policy
         self._stop_probability = stop_probability
 
         self.obs_space_dim = self._env.observation_space.n
@@ -43,18 +41,33 @@ class RDPGenerator(Generator):
         """Get the alphabet size."""
         return int(np.prod([self.action_dim, self.nb_rewards, self.obs_space_dim]))
 
-    def sample(self, n: int = 1, with_final: bool = False) -> Sequence[Word]:
+    def _should_stop(self) -> bool:
+        """Return True if the current episode should stop, false otherwise."""
+        return np.random.random() < self._stop_probability
+
+
+class RDPGenerator(AbstractRDPGenerator, Generator):
+    """Implementation of trace sampler with Generator interface.."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        nb_rewards: int,
+        policy: Callable,
+        stop_probability: float = 0.05,
+    ):
+        """Initialize the RDP generator."""
+        super().__init__(env, nb_rewards, stop_probability)
+        self._policy = policy
+
+    def sample(self, n: int = 1) -> Sequence[Word]:
         """Sample a set of samples."""
         result = []
         for _ in range(n):
             word = self._sample_word()
-            word = cast(List, word) + ([FINAL_SYMBOL] if with_final else [])
+            word = cast(List, word)
             result.append(word)
         return result
-
-    def _should_stop(self) -> bool:
-        """Return True if the current episode should stop, false otherwise."""
-        return np.random.random() < self._stop_probability
 
     def _sample_word(self) -> Word:
         """Sample one word."""
@@ -68,8 +81,35 @@ class RDPGenerator(Generator):
             obs, reward, done, _ = self._env.step(action)
             trace += [(action, int(reward), obs)]
 
-        encoded_trace = [self.encoder(x) for x in trace]
+        encoded_trace = [self.encoder(x) for x in trace] + [-1]
         return encoded_trace
+
+
+class RDPGeneratorWrapper(AbstractRDPGenerator, gym.Wrapper):
+    """Trace generator."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        nb_rewards: int,
+        stop_probability: float = 0.05,
+    ):
+        AbstractRDPGenerator.__init__(self, env, nb_rewards, stop_probability)
+        gym.Wrapper.__init__(self, env)
+
+    def reset(self):
+        """Reset state."""
+        result = super().reset()
+        self.current_trace: List = []
+        return result
+
+    def step(self, action):
+        """Do a step."""
+        o, r, done, info = super().step(action)
+        next_symbol = self.encoder((action, int(r), o))
+        self.current_trace.append(next_symbol)
+        done = done or self._should_stop()
+        return o, r, done, info
 
 
 def random_exploration_policy(env: gym.Env) -> int:

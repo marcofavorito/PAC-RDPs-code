@@ -1,12 +1,16 @@
 """Main test module."""
 from copy import copy
-from typing import Dict, Tuple
+from functools import partial
+from typing import Dict, Sequence, Tuple
 
 import gym
 import pytest
 from gym.wrappers import TimeLimit
 
 from src.experiment_utils.pac_rdp import RDPLearner
+from src.learn_pdfa.utils.generator import MultiprocessedGenerator
+from src.learn_rdps import RDPGenerator, random_exploration_policy
+from src.types import Word
 
 RDP_DEFAULT_CONFIG = dict(
     stop_probability=0.2,
@@ -35,12 +39,27 @@ class BaseTestRotatingMAB:
             "NonMarkovianRotatingMAB-v0", winning_probs=cls.WINNING_PROBABILITIES
         )
         env = TimeLimit(env, max_episode_steps=cls.MAX_EPISODE_STEPS)
-        cls.rdp_learner = RDPLearner(**config)
-        cls.rdp_learner._learn_pdfa(env)
+        cls.rdp_learner = RDPLearner(env, **config)
+        cls.rdp_learner.dataset = cls.sample(env, nb_samples=config["nb_samples"])
+        cls.pdfa = cls.rdp_learner._learn_pdfa()
+
+    @classmethod
+    def sample(cls, env, nb_samples: int) -> Sequence[Word]:
+        """Sample a dataset."""
+        policy = partial(random_exploration_policy, env)
+        _rdp_generator = RDPGenerator(
+            env,
+            policy=policy,
+            nb_rewards=2,
+            stop_probability=0.1,
+        )
+        cls.rdp_learner._rdp_generator = _rdp_generator
+        generator = MultiprocessedGenerator(_rdp_generator, nb_processes=8)
+        return generator.sample(n=nb_samples)
 
     def test_nb_states(self):
         """Test expected number of states."""
-        assert self.rdp_learner.pdfa.nb_states == len(self.WINNING_PROBABILITIES)
+        assert self.pdfa.nb_states == len(self.WINNING_PROBABILITIES)
 
 
 class TestRotatingMAB2ArmsNondet(BaseTestRotatingMAB):

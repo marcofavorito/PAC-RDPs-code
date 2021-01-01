@@ -85,7 +85,7 @@ class SampleMultisetManager:
         logger.info("Generating the sample.")
         if self.params.sample_generator:
             generator = self.params.sample_generator
-            samples = generator.sample(n=self.params.nb_samples, with_final=True)
+            samples = generator.sample(n=self.params.nb_samples)
             samples = list(map(lambda x: tuple(x), samples))
         else:
             samples = self.params.dataset
