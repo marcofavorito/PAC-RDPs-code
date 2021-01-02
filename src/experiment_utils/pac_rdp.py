@@ -5,19 +5,19 @@ from typing import List, Optional, cast
 
 import gym
 from graphviz import Digraph
+from pdfa_learning.learn_pdfa.base import Algorithm, learn_pdfa
+from pdfa_learning.pdfa import PDFA
+from pdfa_learning.pdfa.render import to_graphviz
+from pdfa_learning.types import Word
 from yarllib.core import Model
 from yarllib.planning.gpi import ValueIterationAgent
 
-from src.learn_pdfa.base import Algorithm, learn_pdfa
 from src.learn_rdps import (
     AbstractRDPGenerator,
     RDPGenerator,
     RDPGeneratorWrapper,
     mdp_from_pdfa,
 )
-from src.pdfa import PDFA
-from src.pdfa.render import to_graphviz
-from src.types import Word
 
 
 class RDPLearner(Model):

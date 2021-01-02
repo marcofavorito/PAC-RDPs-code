@@ -6,10 +6,9 @@ from typing import Callable, Deque, Dict, List, Sequence, Set, Tuple, cast
 import gym
 import numpy as np
 from gym.envs.toy_text.discrete import DiscreteEnv
-
-from src.learn_pdfa.utils.generator import Generator
-from src.pdfa.base import FINAL_SYMBOL, PDFA
-from src.types import Character, State, Word
+from pdfa_learning.learn_pdfa.utils.generator import Generator
+from pdfa_learning.pdfa.base import FINAL_SYMBOL, PDFA
+from pdfa_learning.types import Character, State, Word
 
 
 class AbstractRDPGenerator:

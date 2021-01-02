@@ -6,9 +6,9 @@ from typing import Dict, Sequence, Tuple
 import gym
 import pytest
 from gym.wrappers import TimeLimit
+from pdfa_learning.learn_pdfa.utils.generator import MultiprocessedGenerator
 
 from src.experiment_utils.pac_rdp import RDPLearner
-from src.learn_pdfa.utils.generator import MultiprocessedGenerator
 from src.learn_rdps import RDPGenerator, random_exploration_policy
 from src.types import Word
 

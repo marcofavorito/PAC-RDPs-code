@@ -5,6 +5,8 @@ from typing import List, Type, cast
 
 import gym
 from gym.wrappers import TimeLimit
+from pdfa_learning.pdfa.base import FINAL_SYMBOL, PDFA
+from pdfa_learning.pdfa.render import to_graphviz
 from yarllib.base import AbstractAgent
 from yarllib.core import Agent, Policy
 from yarllib.helpers.history import History
@@ -15,8 +17,6 @@ from src import NonMarkovianRotatingMAB
 from src.experiment_utils.base import Experiment
 from src.experiment_utils.pac_rdp import RDPLearner
 from src.learn_rdps import RDPGeneratorWrapper
-from src.pdfa.base import FINAL_SYMBOL, PDFA
-from src.pdfa.render import to_graphviz
 
 
 class RotMABExperiment(ABC):
