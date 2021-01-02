@@ -1,24 +1,19 @@
 """Agent PAC-RDP."""
 import logging
 import pprint
-from functools import partial
-from typing import List, Optional, Sequence, cast
+from typing import List, Optional, cast
 
 import gym
 from graphviz import Digraph
-from yarllib.base import AbstractAgent
-from yarllib.core import Model, Policy
-from yarllib.helpers.history import History
+from yarllib.core import Model
 from yarllib.planning.gpi import ValueIterationAgent
 
 from src.learn_pdfa.base import Algorithm, learn_pdfa
-from src.learn_pdfa.utils.generator import Generator, MultiprocessedGenerator
 from src.learn_rdps import (
     AbstractRDPGenerator,
     RDPGenerator,
     RDPGeneratorWrapper,
     mdp_from_pdfa,
-    random_exploration_policy,
 )
 from src.pdfa import PDFA
 from src.pdfa.render import to_graphviz
@@ -62,6 +57,7 @@ class RDPLearner(Model):
         return self._rdp_generator
 
     def on_session_begin(self, *args, **kwargs) -> None:
+        """On session begin."""
         self._rdp_generator = cast(RDPGeneratorWrapper, self.context.environment)
 
     def on_episode_end(self, episode, **kwargs) -> None:
@@ -70,16 +66,6 @@ class RDPLearner(Model):
             logging.info(f"Updating policy at episode {episode}")
             self._update()
         self._add_trace()
-
-    #
-    # def test(self, env: gym.Env, policy: Optional[Policy] = None, **kwargs) -> History:
-    #     """Test the agent."""
-    #     wrapper = RDPWrapper(
-    #         env, cast(PDFA, self.pdfa), cast(RDPGenerator, self.rdp_generator)
-    #     )
-    #     return cast(ValueIterationAgent, self.value_iteration_agent).test(
-    #         wrapper, policy, **kwargs
-    #     )
 
     def get_best_action(self, state):
         """Get best action."""
@@ -117,7 +103,7 @@ class RDPLearner(Model):
     def _update(self):
         try:
             self.pdfa = self._learn_pdfa()
-        except:
+        except ValueError:
             logging.info("PDFA Construction failed.")
             return
 

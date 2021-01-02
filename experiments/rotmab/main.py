@@ -30,13 +30,13 @@ if __name__ == "__main__":
         update_frequency=1000,
     )
 
-    # Experiment1 = mixin_experiment(QLearningExperiment, RotMABExperiment)  # type: ignore
-    # e1 = Experiment1(  # type: ignore
-    #     **common_configurations,  # type: ignore
-    #     output_dir=output,
-    #     experiment_name="q-learning",
-    # )
-    # e1.run()
+    Experiment1 = mixin_experiment(QLearningExperiment, RotMABExperiment)  # type: ignore
+    e1 = Experiment1(  # type: ignore
+        **common_configurations,  # type: ignore
+        output_dir=output,
+        experiment_name="q-learning",
+    )
+    e1.run()
 
     Experiment2 = mixin_experiment(PACRDPExperiment, RotMABRDPWrapper)
 

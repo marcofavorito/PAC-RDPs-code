@@ -9,13 +9,13 @@ from yarllib.base import AbstractAgent
 from yarllib.core import Agent, Policy
 from yarllib.helpers.history import History
 from yarllib.learning.tabular import TabularQLearning
-from yarllib.policies import EpsGreedyPolicy, GreedyPolicy, RandomPolicy
+from yarllib.policies import EpsGreedyPolicy, RandomPolicy
 
 from src import NonMarkovianRotatingMAB
 from src.experiment_utils.base import Experiment
 from src.experiment_utils.pac_rdp import RDPLearner
 from src.learn_rdps import RDPGeneratorWrapper
-from src.pdfa.base import FINAL_SYMBOL
+from src.pdfa.base import FINAL_SYMBOL, PDFA
 from src.pdfa.render import to_graphviz
 
 
@@ -115,7 +115,8 @@ class PACRDPExperiment(ABC):
         char2str = (
             lambda c: str(model.rdp_generator.decoder(c)) if c != FINAL_SYMBOL else "-1"
         )
-        to_graphviz(model.pdfa, char2str=char2str).render(str(experiment_dir / "pdfa"))
+        pdfa = cast(PDFA, model.pdfa)
+        to_graphviz(pdfa, char2str=char2str).render(str(experiment_dir / "pdfa"))
 
 
 def mixin_experiment(*_cls) -> Type[Experiment]:

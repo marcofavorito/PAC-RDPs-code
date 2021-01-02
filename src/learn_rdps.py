@@ -94,6 +94,7 @@ class RDPGeneratorWrapper(AbstractRDPGenerator, gym.Wrapper):
         nb_rewards: int,
         stop_probability: float = 0.05,
     ):
+        """Initialize the RDP wrapper for a Gym Env."""
         AbstractRDPGenerator.__init__(self, env, nb_rewards, stop_probability)
         gym.Wrapper.__init__(self, env)
 

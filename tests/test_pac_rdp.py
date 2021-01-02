@@ -53,7 +53,7 @@ class BaseTestRotatingMAB:
             nb_rewards=2,
             stop_probability=0.1,
         )
-        cls.rdp_learner._rdp_generator = _rdp_generator
+        cls.rdp_learner._rdp_generator = _rdp_generator  # type: ignore
         generator = MultiprocessedGenerator(_rdp_generator, nb_processes=8)
         return generator.sample(n=nb_samples)
 
