@@ -5,17 +5,18 @@ from typing import List, Type, cast
 
 import gym
 from gym.wrappers import TimeLimit
+from pdfa_learning.pdfa.base import FINAL_SYMBOL, PDFA
+from pdfa_learning.pdfa.render import to_graphviz
 from yarllib.base import AbstractAgent
 from yarllib.core import Agent, Policy
 from yarllib.helpers.history import History
 from yarllib.learning.tabular import TabularQLearning
-from yarllib.policies import EpsGreedyPolicy
+from yarllib.policies import EpsGreedyPolicy, RandomPolicy
 
 from src import NonMarkovianRotatingMAB
 from src.experiment_utils.base import Experiment
 from src.experiment_utils.pac_rdp import RDPLearner
-from src.pdfa.base import FINAL_SYMBOL
-from src.pdfa.render import to_graphviz
+from src.learn_rdps import RDPGeneratorWrapper
 
 
 class RotMABExperiment(ABC):
@@ -32,6 +33,20 @@ class RotMABExperiment(ABC):
             NonMarkovianRotatingMAB(winning_probs=self.winning_probs),
             max_episode_steps=self.max_steps,
         )
+
+
+class RotMABRDPWrapper(RotMABExperiment, ABC):
+    """Experiments for RDPs."""
+
+    def __init__(self, stop_probability: float = 0.1, **_kwargs):
+        """Initialize a RotMAB experiment."""
+        super().__init__(**_kwargs)
+        self.stop_probability = stop_probability
+
+    def make_env(self) -> gym.Env:
+        """Make env."""
+        env = super().make_env()
+        return RDPGeneratorWrapper(env, 2, self.stop_probability)
 
 
 class QLearningExperiment(ABC):
@@ -55,7 +70,7 @@ class QLearningExperiment(ABC):
             env.observation_space, env.action_space, sparse=True, **kwargs
         ).agent()
 
-    def make_policy(self) -> Policy:
+    def make_policy(self, _env: gym.Env) -> Policy:
         """Make policy."""
         return EpsGreedyPolicy(self.kwargs.get("epsilon", 0.1))
 
@@ -80,26 +95,28 @@ class PACRDPExperiment(ABC):
             "epsilon",
             "delta",
             "stop_probability",
-            "nb_sampling_processes",
+            "update_frequency",
         ]
         kwargs = dict(
             [(key, self.kwargs.get(key)) for key in keys if self.kwargs.get(key)]
         )
-        return RDPLearner(**kwargs)
+        return RDPLearner(env, **kwargs).agent()
 
-    def make_policy(self) -> Policy:
+    def make_policy(self, env: gym.Env) -> Policy:
         """Make policy."""
-        return EpsGreedyPolicy(self.kwargs.get("epsilon", 0.1))
+        return RandomPolicy(env.action_space)
 
     def _process_experiment(
         self, agent: AbstractAgent, history: History, experiment_dir: Path
     ):
         super()._process_experiment(agent, history, experiment_dir)  # type: ignore
-        agent = cast(RDPLearner, agent)
+        agent = cast(Agent, agent)
+        model = cast(RDPLearner, agent.model)
         char2str = (
-            lambda c: str(agent.rdp_generator.decoder(c)) if c != FINAL_SYMBOL else "-1"
+            lambda c: str(model.rdp_generator.decoder(c)) if c != FINAL_SYMBOL else "-1"
         )
-        to_graphviz(agent.pdfa, char2str=char2str).render(str(experiment_dir / "pdfa"))
+        pdfa = cast(PDFA, model.pdfa)
+        to_graphviz(pdfa, char2str=char2str).render(str(experiment_dir / "pdfa"))
 
 
 def mixin_experiment(*_cls) -> Type[Experiment]:

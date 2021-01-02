@@ -1,110 +1,89 @@
 """Agent PAC-RDP."""
-from functools import partial
-from typing import Optional, cast
+import logging
+import pprint
+from typing import List, Optional, cast
 
 import gym
 from graphviz import Digraph
-from yarllib.base import AbstractAgent
-from yarllib.core import Policy
-from yarllib.helpers.history import History
+from pdfa_learning.learn_pdfa.base import Algorithm, learn_pdfa
+from pdfa_learning.pdfa import PDFA
+from pdfa_learning.pdfa.render import to_graphviz
+from pdfa_learning.types import Word
+from yarllib.core import Model
 from yarllib.planning.gpi import ValueIterationAgent
 
-from src.learn_pdfa.base import Algorithm, learn_pdfa
-from src.learn_pdfa.utils.generator import Generator, MultiprocessedGenerator
-from src.learn_rdps import RDPGenerator, mdp_from_pdfa, random_exploration_policy
-from src.pdfa import PDFA
-from src.pdfa.render import to_graphviz
+from src.learn_rdps import (
+    AbstractRDPGenerator,
+    RDPGenerator,
+    RDPGeneratorWrapper,
+    mdp_from_pdfa,
+)
 
 
-class RDPLearner(AbstractAgent):
+class RDPLearner(Model):
     """RDP learner class."""
 
     def __init__(
         self,
+        env: gym.Env,
         upperbound: int = 10,
         epsilon: float = 0.1,
         delta: float = 0.1,
         nb_samples: int = 10000,
         stop_probability: float = 0.2,
         gamma: float = 0.9,
-        nb_sampling_processes: int = 1,
-        **_kwargs
+        update_frequency: int = 100,
+        **_kwargs,
     ):
         """Initialize the PAC-RDP learner."""
+        self.env = env
         self.upperbound = upperbound
         self.nb_samples = nb_samples
         self.epsilon = epsilon
         self.delta = delta
         self.stop_probability = stop_probability
         self.gamma = gamma
-        self.nb_sampling_processes = nb_sampling_processes
+        self.update_frequency = update_frequency
 
-        self._rdp_generator: Optional[RDPGenerator] = None
+        self._rdp_generator: Optional[AbstractRDPGenerator] = None
         self.pdfa: Optional[PDFA] = None
+        self.dataset: List[Word] = []
         self.value_iteration_agent: Optional[ValueIterationAgent] = None
 
     @property
-    def rdp_generator(self) -> RDPGenerator:
-        """Get the RDP generator."""
+    def rdp_generator(self) -> AbstractRDPGenerator:
+        """Get the RDP generator wrapper."""
         assert self._rdp_generator is not None, "RDP generator not yet set."
         return self._rdp_generator
 
-    def train(self, env: gym.Env, *args, max_nb_iterations: int = 50, **kwargs):
-        """Train the agent."""
-        policy = args[0]
-        self._learn_pdfa(env)
-        new_env = mdp_from_pdfa(
-            cast(PDFA, self.pdfa),
-            cast(RDPGenerator, self.rdp_generator),
-            stop_probability=self.stop_probability,
-        )
-        self.value_iteration_agent = ValueIterationAgent(
-            new_env.observation_space, new_env.action_space, gamma=self.gamma
-        )
-        self.value_iteration_agent.train(
-            new_env, *args, max_nb_iterations=max_nb_iterations, **kwargs
-        )
-        return self.test(env, policy, **kwargs)
+    def on_session_begin(self, *args, **kwargs) -> None:
+        """On session begin."""
+        self._rdp_generator = cast(RDPGeneratorWrapper, self.context.environment)
 
-    def test(self, env: gym.Env, policy: Optional[Policy] = None, **kwargs) -> History:
-        """Test the agent."""
-        wrapper = RDPWrapper(
-            env, cast(PDFA, self.pdfa), cast(RDPGenerator, self.rdp_generator)
-        )
-        return cast(ValueIterationAgent, self.value_iteration_agent).test(
-            wrapper, policy, **kwargs
-        )
+    def on_episode_end(self, episode, **kwargs) -> None:
+        """On episode end."""
+        if episode != 0 and episode % self.update_frequency == 0:
+            logging.info(f"Updating policy at episode {episode}")
+            self._update()
+        self._add_trace()
 
     def get_best_action(self, state):
         """Get best action."""
+        if self.value_iteration_agent is None:
+            return self.context.environment.action_space.sample()
         return self.value_iteration_agent.get_best_action(state)
 
-    def _learn_pdfa(self, env: gym.Env) -> None:
+    def _learn_pdfa(self) -> PDFA:
         """Learn a PDFA from the environment."""
-        policy = partial(random_exploration_policy, env)
-
-        self._rdp_generator = RDPGenerator(
-            env,
-            policy=policy,
-            nb_rewards=2,
-            stop_probability=self.stop_probability,
-        )
-        if self.nb_sampling_processes == 1:
-            generator: Generator = self.rdp_generator
-        else:
-            generator = MultiprocessedGenerator(
-                self.rdp_generator, nb_processes=self.nb_sampling_processes
-            )
-
-        self.pdfa = learn_pdfa(
+        pdfa = learn_pdfa(
             algorithm=Algorithm.BALLE,
-            nb_samples=self.nb_samples,
-            sample_generator=generator,
+            dataset=self.dataset,
             alphabet_size=self.rdp_generator.alphabet_size(),
             delta=self.delta,
             n=self.upperbound,
             with_infty_norm=False,
         )
+        return pdfa
 
     def to_graphviz(self) -> Digraph:
         """Get the PDFA automaton."""
@@ -117,11 +96,38 @@ class RDPLearner(AbstractAgent):
             else str(-1),
         )
 
+    def _add_trace(self):
+        env = cast(RDPGeneratorWrapper, self.context.environment)
+        self.dataset.append(env.current_trace + [-1])
+
+    def _update(self):
+        try:
+            self.pdfa = self._learn_pdfa()
+        except ValueError:
+            logging.info("PDFA Construction failed.")
+            return
+
+        logging.debug(f"PDFA learned. Number of states: {self.pdfa.nb_states}")
+        new_env = mdp_from_pdfa(
+            cast(PDFA, self.pdfa),
+            cast(RDPGenerator, self.rdp_generator),
+            stop_probability=self.stop_probability,
+        )
+        logging.info("Computed MDP.")
+        logging.info(f"Observation space: {new_env.observation_space}")
+        logging.info(f"Action space: {new_env.action_space}")
+        logging.info(f"Dynamics:\n{pprint.pformat(new_env.P)}")
+        self.value_iteration_agent = ValueIterationAgent(
+            new_env.observation_space, new_env.action_space, gamma=self.gamma
+        )
+        self.value_iteration_agent.train(new_env, max_nb_iterations=50)
+        logging.info("Value iteration completed.")
+
 
 class RDPWrapper(gym.Wrapper):
     """Wrapper to gym environment."""
 
-    def __init__(self, env: gym.Env, pdfa: PDFA, rdp_generator: RDPGenerator):
+    def __init__(self, env: gym.Env, pdfa: PDFA, rdp_generator: AbstractRDPGenerator):
         """Initialize an RDP-wrapped environment."""
         super().__init__(env)
         self.pdfa = pdfa
