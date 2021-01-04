@@ -1,7 +1,8 @@
 """Types for the package PDFA."""
-from typing import Dict, Sequence, Tuple
+from typing import Any, Tuple
 
-State = int
-Character = int
-Word = Sequence[Character]
-TransitionFunctionDict = Dict[State, Dict[Character, Tuple[State, float]]]
+State = Any
+Action = Any
+Reward = Any
+Done = bool
+AgentObservation = Tuple[State, Action, Reward, State, Done]

@@ -2,14 +2,16 @@
 import logging
 import shutil
 from pathlib import Path
+from typing import Dict
 
-from src.experiment_utils.mixins import (
-    PACRDPExperiment,
-    QLearningExperiment,
-    RotMABExperiment,
-    RotMABRDPWrapper,
-    mixin_experiment,
-)
+import gym
+from gym.wrappers import TimeLimit
+
+from src.algorithms.base import make_eps_greedy_policy
+from src.algorithms.q_learning import QLearning
+from src.callbacks.checkpoint import Checkpoint
+from src.experiment import Experiment
+from src.helpers.stats import plot_average_stats
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("yarllib").setLevel(logging.DEBUG)
@@ -17,36 +19,41 @@ logging.getLogger("yarllib").setLevel(logging.DEBUG)
 if __name__ == "__main__":
     output = Path("outputs")
     shutil.rmtree(output, ignore_errors=True)
-    nb_episodes = nb_samples = 10000
 
-    common_configurations = dict(
-        nb_runs=1,
-        winning_probs=[0.9, 0.2],
-        max_steps=30,
-        gamma=0.9,
-        epsilon=0.1,  # eps-greedy
+    # parameters
+    nb_episodes = nb_samples = 1000
+    nb_runs = 32
+    winning_probs = [0.9, 0.2]
+    max_steps = 30
+    epsilon = 0.8
+    nb_processes = 8
+    update_frequency = 25
+    seeds = None
+    """
+    env = TimeLimit(
+        NonMarkovianRotatingMAB(winning_probs=winning_probs),
+        max_episode_steps=max_steps,
+    )
+    """
+    env = gym.make("FrozenLake-v0", is_slippery=False)
+    env = TimeLimit(env, max_episode_steps=max_steps)
+
+    agent_params: Dict = dict()
+    callbacks = [Checkpoint(update_frequency, output / "q-learning")]
+
+    experiment = Experiment(
+        "q-learning",
+        env,
+        QLearning,
+        agent_params,
+        policy=make_eps_greedy_policy(epsilon=epsilon),
         nb_episodes=nb_episodes,
-        nb_processes=8,
-        update_frequency=1000,
+        callbacks=callbacks,
+        nb_runs=nb_runs,
+        nb_processes=nb_processes,
+        seeds=seeds or (),
     )
 
-    Experiment1 = mixin_experiment(QLearningExperiment, RotMABExperiment)  # type: ignore
-    e1 = Experiment1(  # type: ignore
-        **common_configurations,  # type: ignore
-        output_dir=output,
-        experiment_name="q-learning",
-    )
-    e1.run()
+    stats = experiment.run()
 
-    Experiment2 = mixin_experiment(PACRDPExperiment, RotMABRDPWrapper)
-
-    e2 = Experiment2(  # type: ignore
-        **common_configurations,  # type: ignore
-        output_dir=output,
-        experiment_name="pac-rdp",
-        stop_probability=0.1,
-        nb_samples=nb_samples,
-        delta=0.05,
-        n_upperbound=10,
-    )
-    e2.run()
+    plot_average_stats([stats], ["q-learning"])

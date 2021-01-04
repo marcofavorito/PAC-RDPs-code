@@ -7,10 +7,10 @@ import gym
 import pytest
 from gym.wrappers import TimeLimit
 from pdfa_learning.learn_pdfa.utils.generator import MultiprocessedGenerator
+from pdfa_learning.types import Word
 
 from src.experiment_utils.pac_rdp import RDPLearner
 from src.learn_rdps import RDPGenerator, random_exploration_policy
-from src.types import Word
 
 RDP_DEFAULT_CONFIG = dict(
     stop_probability=0.2,
