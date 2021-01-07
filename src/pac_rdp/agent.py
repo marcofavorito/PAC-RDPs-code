@@ -181,7 +181,7 @@ class PacRdpAgent(Agent):
         context = Context(experiment_name, self, env, callbacks)
         context.on_training_begin()
         episode = 0
-        for self.current_l in range(self.max_l):
+        for self.current_l in range(1, self.max_l + 1):
             if episode > nb_episodes:
                 break
             self._iteration_reset()

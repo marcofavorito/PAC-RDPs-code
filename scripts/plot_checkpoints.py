@@ -45,7 +45,9 @@ if __name__ == '__main__':
     steps = []
     names = []
 
-    for experiment_dir in filter(_is_dir, output_dir.iterdir()):
+    experiment_directories = list(filter(_is_dir, output_dir.iterdir()))
+    nb_experiments = len(experiment_directories)
+    for experiment_dir in experiment_directories:
         names.append(experiment_dir.name)
         experiment_history = []
 
@@ -64,7 +66,6 @@ if __name__ == '__main__':
 
 
     datas = []
-    steps = np.asarray(histories[0][0][0])
     for experiment in histories:
         experiment_data = []
         for run in experiment:
@@ -74,11 +75,10 @@ if __name__ == '__main__':
             run_data = rewards
             experiment_data.append(run_data)
         datas.append(np.stack(experiment_data))
-    data = np.stack(datas)
 
-    (nb_experiments, nb_runs, nb_points, nb_steps) = data.shape
-    for experiment_id in range(nb_experiments):
-        experiment_data = data[experiment_id]
+    for experiment_id, history in enumerate(histories):
+        steps = max(histories[experiment_id], key=lambda run: len(run[0]))[0]
+        experiment_data = datas[experiment_id]
         label = names[experiment_id]
         average_rewards = experiment_data.mean(axis=2)
         average_rewards_mean = average_rewards.mean(axis=0)

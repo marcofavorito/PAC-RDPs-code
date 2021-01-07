@@ -38,14 +38,12 @@ if __name__ == "__main__":
 
     label = "q-learning"
     callbacks = [Checkpoint(update_frequency, output / label)]
-    agent = QLearning(
-        env.observation_space, env.action_space, make_eps_greedy_policy(epsilon)
-    )
+    agent_params: Dict = dict(policy=make_eps_greedy_policy(epsilon))
     experiment = Experiment(
         label,
         env,
         QLearning,
-        dict(),
+        agent_params,
         nb_episodes=nb_episodes,
         callbacks=callbacks,
         nb_runs=nb_runs,
@@ -56,7 +54,7 @@ if __name__ == "__main__":
     plot_average_stats([stats], [label])
 
     label = "pac-rdp"
-    agent_params: Dict = dict(env=env)
+    agent_params = dict(env=env)
     callbacks = [RDPCheckpoint(update_frequency, output / label)]
     experiment = Experiment(
         label,
