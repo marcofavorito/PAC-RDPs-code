@@ -8,7 +8,7 @@ from typing import Any, Dict
 import gym
 import numpy as np
 
-from src.core import Agent
+from src.core import Agent, Policy
 from src.helpers.gym import space_size
 from src.types import AgentObservation
 
@@ -20,11 +20,12 @@ class QLearning(Agent):
         self,
         observation_space: gym.Space,
         action_space: gym.Space,
+        policy: Policy,
         alpha: float = 0.1,
         gamma: float = 0.99,
     ):
         """Initialize."""
-        super().__init__(observation_space, action_space)
+        super().__init__(observation_space, action_space, policy)
 
         self.alpha = alpha
         self.gamma = gamma
@@ -40,11 +41,11 @@ class QLearning(Agent):
             * sys.float_info.epsilon
         )
 
-    def choose_action(self, state: Any):
+    def choose_best_action(self, state: Any):
         """Choose the best action."""
         return np.argmax(self.q[state])
 
-    def on_step_end(self, step, agent_observation: AgentObservation, **kwargs) -> None:
+    def observe(self, agent_observation: AgentObservation) -> None:
         """On step end."""
         s, a, r, sp, _ = agent_observation
         alpha = self.alpha

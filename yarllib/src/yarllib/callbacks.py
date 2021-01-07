@@ -42,7 +42,7 @@ class RenderEnv(LearningEventListener):
         """On episode begin event."""
         self.context.environment.render()
 
-    def on_step_end(self, *args, **kwargs) -> None:
+    def observe(self, *args, **kwargs) -> None:
         """On step end event."""
         self.context.environment.render()
 
@@ -86,10 +86,10 @@ class LoggingCallback(LearningEventListener):
         """On step begin event."""
         self.logger.debug(f"on_step_begin: step={step}, action={action}", **kwargs)
 
-    def on_step_end(self, step, agent_observation: AgentObservation, **kwargs) -> None:
+    def observe(self, step, agent_observation: AgentObservation, **kwargs) -> None:
         """On step end event."""
         self.logger.debug(
-            f"on_step_end: step={step}, agent_observation={agent_observation}", **kwargs
+            f"observe: step={step}, agent_observation={agent_observation}", **kwargs
         )
 
 

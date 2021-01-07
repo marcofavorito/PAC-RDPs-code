@@ -4,14 +4,16 @@ import shutil
 from pathlib import Path
 from typing import Dict
 
-import gym
 from gym.wrappers import TimeLimit
 
-from src.algorithms.base import make_eps_greedy_policy
+from src import NonMarkovianRotatingMAB
 from src.algorithms.q_learning import QLearning
 from src.callbacks.checkpoint import Checkpoint
+from src.core import make_eps_greedy_policy
 from src.experiment import Experiment
 from src.helpers.stats import plot_average_stats
+from src.pac_rdp.agent import PacRdpAgent
+from src.pac_rdp.checkpoint import RDPCheckpoint
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("yarllib").setLevel(logging.DEBUG)
@@ -21,39 +23,51 @@ if __name__ == "__main__":
     shutil.rmtree(output, ignore_errors=True)
 
     # parameters
-    nb_episodes = nb_samples = 1000
+    nb_episodes = nb_samples = 8000
     nb_runs = 32
     winning_probs = [0.9, 0.2]
     max_steps = 30
-    epsilon = 0.8
+    epsilon = 0.1
     nb_processes = 8
-    update_frequency = 25
+    update_frequency = 500
     seeds = None
-    """
     env = TimeLimit(
         NonMarkovianRotatingMAB(winning_probs=winning_probs),
         max_episode_steps=max_steps,
     )
-    """
-    env = gym.make("FrozenLake-v0", is_slippery=False)
-    env = TimeLimit(env, max_episode_steps=max_steps)
 
-    agent_params: Dict = dict()
-    callbacks = [Checkpoint(update_frequency, output / "q-learning")]
-
+    label = "q-learning"
+    callbacks = [Checkpoint(update_frequency, output / label)]
+    agent = QLearning(
+        env.observation_space, env.action_space, make_eps_greedy_policy(epsilon)
+    )
     experiment = Experiment(
-        "q-learning",
+        label,
         env,
         QLearning,
-        agent_params,
-        policy=make_eps_greedy_policy(epsilon=epsilon),
+        dict(),
         nb_episodes=nb_episodes,
         callbacks=callbacks,
         nb_runs=nb_runs,
         nb_processes=nb_processes,
         seeds=seeds or (),
     )
-
     stats = experiment.run()
+    plot_average_stats([stats], [label])
 
-    plot_average_stats([stats], ["q-learning"])
+    label = "pac-rdp"
+    agent_params: Dict = dict(env=env)
+    callbacks = [RDPCheckpoint(update_frequency, output / label)]
+    experiment = Experiment(
+        label,
+        env,
+        PacRdpAgent,
+        agent_params,
+        nb_episodes=nb_episodes,
+        callbacks=callbacks,
+        nb_runs=nb_runs,
+        nb_processes=nb_processes,
+        seeds=seeds or (),
+    )
+    stats = experiment.run()
+    plot_average_stats([stats], [label])

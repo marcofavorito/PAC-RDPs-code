@@ -16,7 +16,7 @@ from yarllib.policies import EpsGreedyPolicy, RandomPolicy
 from src import NonMarkovianRotatingMAB
 from src.experiment_utils.base import Experiment
 from src.experiment_utils.pac_rdp import RDPLearner
-from src.learn_rdps import RDPGeneratorWrapper
+from src.pac_rdp.helpers import RDPGeneratorWrapper
 
 
 class RotMABExperiment(ABC):

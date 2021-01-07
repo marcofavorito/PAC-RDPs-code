@@ -12,7 +12,7 @@ from pdfa_learning.types import Word
 from yarllib.core import Model
 from yarllib.planning.gpi import ValueIterationAgent
 
-from src.learn_rdps import (
+from src.pac_rdp.helpers import (
     AbstractRDPGenerator,
     RDPGenerator,
     RDPGeneratorWrapper,

@@ -49,10 +49,9 @@ class StatsCallback(Callback):
 
     def save_complete(self):
         """Save episode statistics."""
-        if self.steps != 0:
-            self.episode_lengths.append(self.steps)
-            self.episode_rewards.append(float(self.total_reward))
-            self.timestamps.append(time.time())
+        self.episode_lengths.append(self.steps)
+        self.episode_rewards.append(float(self.total_reward))
+        self.timestamps.append(time.time())
 
     def get_stats(self) -> Stats:
         """Get the statistics."""

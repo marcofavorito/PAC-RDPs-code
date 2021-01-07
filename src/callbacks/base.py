@@ -5,7 +5,6 @@ from typing import Collection, Optional
 
 import gym
 
-from src.core import Agent
 from src.types import AgentObservation
 
 
@@ -19,7 +18,7 @@ class BaseCallback(ABC):
     - on_episode_begin
     - on_episode_end
     - on_step_begin
-    - on_step_end
+    - observe
     """
 
     def on_training_begin(self, **kwargs) -> None:
@@ -44,7 +43,7 @@ class BaseCallback(ABC):
 class Callback(BaseCallback, ABC):
     """Abstract class for callbacks."""
 
-    agent: Optional[Agent] = None
+    agent: Optional["Agent"] = None  # type: ignore # noqa
     env: Optional[gym.Env] = None
     experiment_name: Optional[str] = None
 
@@ -66,7 +65,7 @@ class CallbackList(BaseCallback):
             method = getattr(callback, method_name)
             method(*args, **kwargs)
 
-    def set_agent(self, agent: Optional[Agent]):
+    def set_agent(self, agent: Optional["Agent"]):  # type: ignore # noqa
         """Set the agent to every callback."""
         for c in self.callbacks:
             c.agent = agent

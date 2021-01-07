@@ -2,11 +2,10 @@
 """Experiment helpers."""
 
 import multiprocessing
-from typing import Collection, Dict, List, Optional, Sequence, Type
+from typing import Collection, Dict, List, Sequence, Type
 
 import gym
 
-from src.algorithms.base import Policy, train
 from src.callbacks.base import Callback
 from src.callbacks.stats import StatsCallback
 from src.core import Agent
@@ -23,7 +22,6 @@ class Experiment:
         env: gym.Env,
         agent_cls: Type[Agent],
         agent_params: Dict,
-        policy: Optional[Policy] = None,
         nb_episodes: int = 1000,
         nb_runs: int = 50,
         nb_processes: int = 8,
@@ -34,9 +32,6 @@ class Experiment:
         Set up the experiment.
 
         :param env: the environment.
-        :param rl_algorithm: the RL algorithm to use.
-                 It is a callable that expects the environment
-                 and any collection of parameters
         :param nb_runs: the number of runs to run in parallel.
         :param nb_processes: the number of processes available.
         :param seeds: the random seeds to set up a run.
@@ -45,7 +40,6 @@ class Experiment:
         self.env = env
         self.agent_cls = agent_cls
         self.agent_params = agent_params
-        self.policy = policy
         self.nb_episodes = nb_episodes
         self.nb_runs = nb_runs
         self.nb_processes = nb_processes
@@ -64,7 +58,6 @@ class Experiment:
         agent_cls: Type[Agent],
         seed: int,
         agent_params: Dict,
-        policy: Optional[Policy] = None,
         nb_episodes: int = 10000,
         callbacks: Collection[Callback] = (),
     ):
@@ -73,10 +66,8 @@ class Experiment:
         agent = agent_cls(env.observation_space, env.action_space, **agent_params)
         history_callback = StatsCallback()
         callbacks = list(callbacks) + [history_callback]
-        train(
-            agent,
+        agent.train(
             env,
-            policy=policy,
             experiment_name=experiment_id,
             nb_episodes=nb_episodes,
             callbacks=callbacks,
@@ -103,7 +94,6 @@ class Experiment:
                     self.agent_cls,
                     seed,
                     self.agent_params,
-                    self.policy,
                     self.nb_episodes,
                     self.callbacks,
                 ),

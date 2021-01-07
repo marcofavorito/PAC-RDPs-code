@@ -7,7 +7,6 @@ from copy import copy
 from pathlib import Path
 from typing import cast
 
-from src.algorithms.base import test
 from src.callbacks.base import Callback
 from src.helpers.stats import stats_from_env, stats_to_json
 from src.wrappers.utils import StatsRecorder
@@ -61,7 +60,7 @@ class Checkpoint(Callback):
         """Run the test."""
         agent = copy(self.agent)
         env = StatsRecorder(self.env, "test_")
-        test(agent, env, nb_episodes=self.nb_trials)
+        agent.test(env, nb_episodes=self.nb_trials)
         history = stats_from_env(env, prefix="test_")
         run_dir = self.experiment_dir
         run_dir.mkdir(exist_ok=True)
