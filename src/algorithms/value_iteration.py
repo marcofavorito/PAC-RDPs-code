@@ -25,7 +25,7 @@ from typing import Dict
 
 import numpy as np
 
-from src.helpers.gym import MyDiscreteEnv, iter_space
+from src.helpers.gym import DiscreteEnv, iter_space
 
 
 class _ValueIteration:
@@ -33,7 +33,7 @@ class _ValueIteration:
 
     def __init__(
         self,
-        env: MyDiscreteEnv,
+        env: DiscreteEnv,
         max_iterations: int = 100,
         eps: float = 1e-8,
         discount: float = 0.9,

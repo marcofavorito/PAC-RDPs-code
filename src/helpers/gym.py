@@ -7,10 +7,8 @@ from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 from graphviz import Digraph
-from gym.envs.toy_text.discrete import DiscreteEnv
+from gym.envs.toy_text.discrete import DiscreteEnv as GymDiscreteEnv
 from gym.spaces import Box, Discrete, MultiDiscrete
-
-from src.helpers.misc import prod
 
 State = Any
 Action = int
@@ -22,7 +20,7 @@ Transitions = Dict[State, Dict[Action, List[Transition]]]
 
 
 def from_discrete_env_to_graphviz(
-    env: "MyDiscreteEnv",
+    env: "DiscreteEnv",
     state2str: Callable[[int], str] = lambda s: str(s),
     action2str: Callable[[int], str] = lambda a: str(a),
 ) -> Digraph:
@@ -58,7 +56,7 @@ def from_discrete_env_to_graphviz(
     return g
 
 
-class MyDiscreteEnv(DiscreteEnv):
+class DiscreteEnv(GymDiscreteEnv):
     """
     A custom version of DiscreteEnv.
 
@@ -74,6 +72,19 @@ class MyDiscreteEnv(DiscreteEnv):
         super().__init__(*args, **kwargs)
 
         self.laststate = None
+        self.rewards = self._compute_rewards()
+        self.nb_rewards = len(self.rewards)
+
+    def _compute_rewards(self):
+        """Compute the number of rewards from the transition function."""
+        P = self.P
+        rewards = set(
+            r
+            for state in P
+            for action in self.P[state]
+            for _, _, r, _ in P[state][action]
+        )
+        return sorted(rewards)
 
     def reset(self):
         """Reset the enviornment."""
@@ -139,7 +150,7 @@ def _(space: Discrete):
 @space_size.register(MultiDiscrete)  # type: ignore
 def _(space: MultiDiscrete):
     """Return the size of a MultiDiscrete space."""
-    return prod(*map(range, space.nvec))
+    return np.prod(space.nvec)
 
 
 def combine_boxes(*args: Box) -> Box:

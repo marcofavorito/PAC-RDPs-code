@@ -3,19 +3,20 @@
 import logging
 import pprint
 from math import log
-from typing import Any, Collection, List, Optional, cast
+from typing import Collection, Optional, cast
 
 import gym
 import numpy as np
 from gym import Space
 from pdfa_learning.learn_pdfa.base import learn_pdfa
 from pdfa_learning.pdfa import PDFA
-from pdfa_learning.types import Word
 
 from src.algorithms.value_iteration import value_iteration
 from src.callbacks.base import Callback
-from src.core import Agent, Context, random_policy
-from src.pac_rdp.helpers import AbstractRDPGenerator, RDPGenerator, mdp_from_pdfa
+from src.core import Context, random_policy
+from src.helpers.gym import DiscreteEnv
+from src.pac_rdp.base import BasePacRdpAgent
+from src.pac_rdp.helpers import RDPGenerator, mdp_from_pdfa
 from src.types import AgentObservation
 
 
@@ -35,36 +36,34 @@ def max_number_of_steps(l_value: int):
     return (2 / p) * l_value ** 5 * (l_value + 4 * log(l_value))
 
 
-class PacRdpAgent(Agent):
+class PacRdpAgent(BasePacRdpAgent):
     """Implementation of PAC-RDP agent."""
 
     def __init__(
         self,
         observation_space: Space,
         action_space: Space,
-        env: gym.Env,
+        env: DiscreteEnv,
         epsilon: float = 0.1,
         delta: float = 0.1,
         gamma: float = 0.9,
-        nb_rewards: int = 2,
         max_l: int = 10,
     ):
         """Initialize the agent."""
-        super().__init__(observation_space, action_space, random_policy)
-        self.env = env
-        self.epsilon = epsilon
-        self.delta = delta
-        self.gamma = gamma
+        super().__init__(
+            observation_space,
+            action_space,
+            env,
+            epsilon,
+            delta,
+            gamma,
+        )
         self.max_l = max_l
-
-        self.value_function: Optional[List] = None
-        self.current_policy: Optional[List] = None
-        self._rdp_generator: AbstractRDPGenerator = RDPGenerator(env, nb_rewards, None)  # type: ignore
-
-        # these are used to compute the optimal policy.
-        self.current_state: Optional[int] = 0
-
         self._reset()
+
+    def _encode_reward(self, reward: float) -> int:
+        """Encode the reward."""
+        return self.env.rewards.index(reward)  # type: ignore
 
     def _reset(self):
         """Reset the state of the agent."""
@@ -82,7 +81,6 @@ class PacRdpAgent(Agent):
         """Reset after the end of one iteration."""
         self.current_p = stop_probability_from_l(self.current_l)
         self.current_M = max_number_of_steps(self.current_l)
-        self.dataset: List[Word] = []
         self.current_i = 0
         self.hard_stop = False
         self.stop = False
@@ -102,25 +100,6 @@ class PacRdpAgent(Agent):
         """Check that next action should be a hard-stop."""
         return (self.current_M - self.current_i) <= len(self.current_episode)
 
-    def _add_trace(self):
-        """Add current trace to dataset."""
-        new_trace = [
-            self._rdp_generator.encoder((a, int(r), sp))
-            for _, a, r, sp, _ in self.current_episode
-        ]
-        self.dataset.append(new_trace + [-1])
-
-    def choose_best_action(self, state: Any):
-        """Choose best action with the currently learned policy."""
-        if (
-            self.current_state is not None
-            and self.value_function is not None
-            and state < len(self.value_function)
-        ):
-            self.current_policy = cast(List, self.current_policy)
-            return self.current_policy[self.current_state]
-        return self.action_space.sample()
-
     def observe(self, agent_observation: AgentObservation):
         """Observe a transition."""
         self.current_episode.append(agent_observation)
@@ -134,7 +113,7 @@ class PacRdpAgent(Agent):
             return
         self.pdfa = cast(PDFA, self.pdfa)
         s, a, r, sp, done = agent_observation
-        symbol = self._rdp_generator.encoder((a, int(r), sp))
+        symbol = self._rdp_generator.encoder((a, self._encode_reward(r), sp))
         self.current_state = self.pdfa.transition_dict.get(self.current_state, {}).get(
             symbol, [None]
         )[0]

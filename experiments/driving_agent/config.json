@@ -1,0 +1,37 @@
+{
+  "environment": {
+    "entrypoint": "experiments.common.envs.make_driving_agent_env",
+    "kwargs": {
+      "max_episode_steps": 50
+    }
+  },
+  "experiment": {
+    "nb_episodes": 30000,
+    "nb_runs": 8,
+    "nb_processes": 8,
+    "checkpoint_frequency": 1000,
+    "seeds": null
+  },
+  "algorithms": [
+    {
+      "id": "q-learning",
+      "entrypoint": "experiments.common.base.run_q_learning",
+      "kwargs": {
+        "epsilon": 0.1
+      }
+    },
+    {
+      "id": "pac-rdp",
+      "entrypoint": "experiments.common.base.run_pac_rdp",
+      "kwargs": {
+      }
+    },
+    {
+      "id": "pac-rdp-simple",
+      "entrypoint": "experiments.common.base.run_pac_rdp_simple",
+      "kwargs": {
+        "update_frequency": 1000
+      }
+    }
+  ]
+}

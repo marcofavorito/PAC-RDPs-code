@@ -9,7 +9,7 @@ from gym.wrappers import TimeLimit
 from pdfa_learning.learn_pdfa.utils.generator import MultiprocessedGenerator
 from pdfa_learning.types import Word
 
-from src.experiment_utils.pac_rdp import RDPLearner
+from src.pac_rdp.agent import PacRdpAgent
 from src.pac_rdp.helpers import RDPGenerator, random_exploration_policy
 
 RDP_DEFAULT_CONFIG = dict(
@@ -39,9 +39,11 @@ class BaseTestRotatingMAB:
             "NonMarkovianRotatingMAB-v0", winning_probs=cls.WINNING_PROBABILITIES
         )
         env = TimeLimit(env, max_episode_steps=cls.MAX_EPISODE_STEPS)
-        cls.rdp_learner = RDPLearner(env, **config)
-        cls.rdp_learner.dataset = cls.sample(env, nb_samples=config["nb_samples"])
-        cls.pdfa = cls.rdp_learner._learn_pdfa()
+        cls.agent = PacRdpAgent(env.observation_space, env.action_space, env)
+        cls.agent.dataset = cls.sample(env, nb_samples=config["nb_samples"])
+        cls.agent.current_l = 10
+        cls.agent._learn_pdfa()
+        cls.pdfa = cls.agent.pdfa
 
     @classmethod
     def sample(cls, env, nb_samples: int) -> Sequence[Word]:
@@ -53,7 +55,7 @@ class BaseTestRotatingMAB:
             nb_rewards=2,
             stop_probability=0.1,
         )
-        cls.rdp_learner._rdp_generator = _rdp_generator  # type: ignore
+        cls.agent._rdp_generator = _rdp_generator  # type: ignore
         generator = MultiprocessedGenerator(_rdp_generator, nb_processes=8)
         return generator.sample(n=nb_samples)
 

@@ -7,6 +7,7 @@ import numpy as np
 from gym.spaces import Discrete
 
 
+# TODO: make it an instance of DiscreteEnv
 class RotatingMAB(gym.Env):
     """
     Rotating Multi-Armed Bandit.
@@ -52,6 +53,8 @@ class RotatingMAB(gym.Env):
         self.current_state = 0
         self._seed = seed
         self.reward = winning_reward
+        self.nb_rewards = 2
+        self.rewards = [0, 1]
         np.random.seed(self._seed)
 
     @property

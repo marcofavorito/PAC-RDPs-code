@@ -10,7 +10,7 @@ from pdfa_learning.learn_pdfa.utils.generator import Generator
 from pdfa_learning.pdfa.base import FINAL_SYMBOL, PDFA
 from pdfa_learning.types import Character, State, Word
 
-from src.helpers.gym import MyDiscreteEnv
+from src.helpers.gym import DiscreteEnv
 
 
 class AbstractRDPGenerator:
@@ -125,7 +125,7 @@ def random_exploration_policy(env: gym.Env) -> int:
 
 def mdp_from_pdfa(
     pdfa: PDFA, rdp_generator: RDPGenerator, stop_probability: float
-) -> MyDiscreteEnv:
+) -> DiscreteEnv:
     """Infer the MDP from a PDFA."""
     P: Dict[int, Dict[int, List[Tuple[float, int, float, bool]]]] = {}
     initial_state_distribution = [1.0] + [0.0] * (pdfa.nb_states - 1)
@@ -160,4 +160,4 @@ def mdp_from_pdfa(
         for (a, r, qf), p in transitions_by_arqf.items():
             P[current].setdefault(a, []).append((p * factor, qf, r, False))
 
-    return MyDiscreteEnv(pdfa.nb_states, nb_actions, P, initial_state_distribution)
+    return DiscreteEnv(pdfa.nb_states, nb_actions, P, initial_state_distribution)
