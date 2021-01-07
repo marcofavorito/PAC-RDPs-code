@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import List
 import numpy as np
+
+from src.helpers.stats import stats_from_json
 from yarllib.helpers.history import history_from_json, EpisodeHistory
 from yarllib.helpers.plots import plot_summaries
 
@@ -43,7 +45,9 @@ if __name__ == '__main__':
     steps = []
     names = []
 
-    for experiment_dir in filter(_is_dir, output_dir.iterdir()):
+    experiment_directories = list(filter(_is_dir, output_dir.iterdir()))
+    nb_experiments = len(experiment_directories)
+    for experiment_dir in experiment_directories:
         names.append(experiment_dir.name)
         experiment_history = []
 
@@ -53,34 +57,33 @@ if __name__ == '__main__':
             steps = []
             for checkpoint_history_path in sorted(run_dir.glob("history-*.json")):
                 checkpoint_history_fp = json.load(checkpoint_history_path.open())
-                checkpoint_history = history_from_json(checkpoint_history_fp)
+                checkpoint_history = stats_from_json(checkpoint_history_fp)
                 step = int(checkpoint_history_path.stem[8:])
                 steps.append(step)
-                episode_histories.append(checkpoint_history.episodes[0])
+                episode_histories.append(checkpoint_history.episode_rewards)
             experiment_history.append((steps, episode_histories))
         histories.append(experiment_history)
 
 
     datas = []
-    steps = np.asarray(histories[0][0][0])
     for experiment in histories:
         experiment_data = []
         for run in experiment:
             _, episodes = run
-            rewards = np.asarray([e.rewards for e in episodes], dtype=np.float64)
+            rewards = np.asarray(episodes, dtype=np.float64)
             # run_data = np.concatenate([steps, rewards], axis=1)
             run_data = rewards
             experiment_data.append(run_data)
         datas.append(np.stack(experiment_data))
-    data = np.stack(datas)
 
-    (nb_experiments, nb_runs, nb_points, nb_steps) = data.shape
-    for experiment_id in range(nb_experiments):
-        experiment_data = data[experiment_id]
+    for experiment_id, history in enumerate(histories):
+        steps = max(histories[experiment_id], key=lambda run: len(run[0]))[0]
+        experiment_data = datas[experiment_id]
         label = names[experiment_id]
         average_rewards = experiment_data.mean(axis=2)
         average_rewards_mean = average_rewards.mean(axis=0)
         average_rewards_std = average_rewards.std(axis=0)
         sns_ax = sns.lineplot(steps, average_rewards_mean, label=label)
         sns_ax.fill_between(steps, average_rewards_mean - average_rewards_std, average_rewards_mean + average_rewards_std, alpha=0.3)
+    plt.savefig(Path(output_dir) / "plot.svg")
     plt.show()

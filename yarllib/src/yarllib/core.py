@@ -44,7 +44,7 @@ class LearningEventListener(ABC):
     - on_episode_begin
     - on_episode_end
     - on_step_begin
-    - on_step_end
+    - observe
     """
 
     _context: Optional["Context"] = None

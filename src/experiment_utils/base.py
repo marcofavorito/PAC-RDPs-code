@@ -216,11 +216,11 @@ def rollout(
     nb_episodes: int = 1,
 ):
     """
-    Do a rollout.
+    Do a test.
 
     :param agent: an agent.
     :param env: the OpenAI Gym environment.
-    :param nb_episodes: the number of rollout episodes.
+    :param nb_episodes: the number of test episodes.
     :return: None
     """
     histories = []
