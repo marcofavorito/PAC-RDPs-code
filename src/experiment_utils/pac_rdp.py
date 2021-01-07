@@ -62,7 +62,7 @@ class RDPLearner(Model):
 
     def on_episode_end(self, episode, **kwargs) -> None:
         """On episode end."""
-        if episode != 0 and episode % self.update_frequency == 0:
+        if episode % self.update_frequency == 0:
             logging.info(f"Updating policy at episode {episode}")
             self._update()
         self._add_trace()

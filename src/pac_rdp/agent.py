@@ -62,7 +62,7 @@ class PacRdpAgent(Agent):
         self._rdp_generator: AbstractRDPGenerator = RDPGenerator(env, nb_rewards, None)  # type: ignore
 
         # these are used to compute the optimal policy.
-        self.current_state = 0
+        self.current_state: Optional[int] = 0
 
         self._reset()
 
@@ -129,6 +129,9 @@ class PacRdpAgent(Agent):
 
     def do_pdfa_transition(self, agent_observation: AgentObservation):
         """Do a PDFA transition."""
+        if self.pdfa is None:
+            self.current_state = None
+            return
         self.pdfa = cast(PDFA, self.pdfa)
         s, a, r, sp, done = agent_observation
         symbol = self._rdp_generator.encoder((a, int(r), sp))
@@ -207,8 +210,8 @@ class PacRdpAgent(Agent):
                 if not self.hard_stop:
                     self._add_trace()
                     self.current_i += len(self.current_episode)
-                episode += 1
                 context.on_episode_end(episode)
+                episode += 1
             self._learn_pdfa()
         context.on_training_end()
 
