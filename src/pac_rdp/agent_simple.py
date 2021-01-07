@@ -174,7 +174,7 @@ class PacRdpAgentSimple(Agent):
                 state = state2
                 step += 1
             self._add_trace()
-            if episode != 0 and episode % self.update_frequency == 0:
+            if episode % self.update_frequency == 0:
                 self._learn_pdfa()
             context.on_episode_end(episode)
         context.on_training_end()

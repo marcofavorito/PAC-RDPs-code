@@ -44,7 +44,9 @@ class Experiment:
         self.nb_runs = nb_runs
         self.nb_processes = nb_processes
         self.callbacks = callbacks
-        self.seeds = list(seeds) if len(seeds) == nb_runs else list(range(nb_runs))
+        self.seeds = (
+            list(seeds) if seeds and len(seeds) == nb_runs else list(range(nb_runs))
+        )
 
     def experiment_id(self, id_: int) -> str:
         """Get the experiment id."""
