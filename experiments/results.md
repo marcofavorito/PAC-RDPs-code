@@ -2,4 +2,4 @@
 
 ## RotMAB (probabilities=[0.9, 0.2])
 
-![](./rotmab/plot.svg)
+![](./rotmab-02-90-20/plot.svg)

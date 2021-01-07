@@ -21,6 +21,9 @@ class Checkpoint(Callback):
         directory: Path,
         rendering: bool = False,
         nb_trials: int = 50,
+        save_env: bool = True,
+        save_history: bool = True,
+        save_agent: bool = False,
     ):
         """
         Initialize the checkpoint callback.
@@ -36,6 +39,10 @@ class Checkpoint(Callback):
         self.nb_trials = nb_trials
         self.episode = 0
 
+        self.save_env = save_env
+        self.save_history = save_history
+        self.save_agent = save_agent
+
     def on_training_begin(self, **kwargs) -> None:
         """On session begin."""
         self.experiment_dir = self.output_dir / cast(str, self.experiment_name)
@@ -45,9 +52,10 @@ class Checkpoint(Callback):
         logging.info(f"Creating directory {self.experiment_dir}...")
         self.experiment_dir.mkdir(parents=True, exist_ok=False)
 
-        logging.info("Saving environment object...")
-        with Path(self.experiment_dir / "env.obj").open("wb") as fp:
-            pickle.dump(self.env, fp)
+        if self.save_env:
+            logging.info("Saving environment object...")
+            with Path(self.experiment_dir / "env.obj").open("wb") as fp:
+                pickle.dump(self.env, fp)
 
     def on_episode_end(self, episode, **kwargs) -> None:
         """Handle on episode end."""
@@ -65,12 +73,14 @@ class Checkpoint(Callback):
         run_dir = self.experiment_dir
         run_dir.mkdir(exist_ok=True)
         ep_string = f"{episode:010d}"
-        agent_file = run_dir / f"agent-{ep_string}.obj"
-        history_file = run_dir / f"history-{ep_string}.json"
-        with agent_file.open("wb") as fpb:
-            pickle.dump(agent, fpb)
-        with history_file.open("w") as fp:
-            json.dump(stats_to_json(history), fp)
+        if self.save_history:
+            history_file = run_dir / f"history-{ep_string}.json"
+            with history_file.open("w") as fp:
+                json.dump(stats_to_json(history), fp)
+        if self.save_agent:
+            agent_file = run_dir / f"agent-{ep_string}.obj"
+            with agent_file.open("wb") as fpb:
+                pickle.dump(agent, fpb)
 
     def on_training_end(self, **kwargs) -> None:
         """On session end."""
