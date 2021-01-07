@@ -85,4 +85,5 @@ if __name__ == '__main__':
         average_rewards_std = average_rewards.std(axis=0)
         sns_ax = sns.lineplot(steps, average_rewards_mean, label=label)
         sns_ax.fill_between(steps, average_rewards_mean - average_rewards_std, average_rewards_mean + average_rewards_std, alpha=0.3)
+    plt.savefig(Path(output_dir) / "plot.svg")
     plt.show()

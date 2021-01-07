@@ -2,7 +2,6 @@
 """This module contains the main code for the algorithm."""
 import logging
 import pprint
-from math import log
 from typing import Any, Collection, List, Optional, cast
 
 import gym
@@ -19,23 +18,17 @@ from src.pac_rdp.helpers import AbstractRDPGenerator, RDPGenerator, mdp_from_pdf
 from src.types import AgentObservation
 
 
-def stop_probability_from_l(l_value: int) -> float:
+def stop_probability_from_D(d: int) -> float:
     """
     Compute the stop probability from the depth.
 
-    :param l_value: the state upper bound.
+    :param d: upper bound on depth.
     :return: the stop probability.
     """
-    return 1 / (10 * l_value + 1)
+    return 1 / (10 * d + 1)
 
 
-def max_number_of_steps(l_value: int):
-    """Compute the max number of steps."""
-    p = stop_probability_from_l(l_value)
-    return (2 / p) * l_value ** 5 * (l_value + 4 * log(l_value))
-
-
-class PacRdpAgent(Agent):
+class PacRdpAgentSimple(Agent):
     """Implementation of PAC-RDP agent."""
 
     def __init__(
@@ -47,7 +40,8 @@ class PacRdpAgent(Agent):
         delta: float = 0.1,
         gamma: float = 0.9,
         nb_rewards: int = 2,
-        max_l: int = 10,
+        max_depth: int = 10,
+        update_frequency: int = 1,
     ):
         """Initialize the agent."""
         super().__init__(observation_space, action_space, random_policy)
@@ -55,52 +49,38 @@ class PacRdpAgent(Agent):
         self.epsilon = epsilon
         self.delta = delta
         self.gamma = gamma
-        self.max_l = max_l
+        self.max_depth = max_depth
+        self.update_frequency = update_frequency
 
         self.value_function: Optional[List] = None
         self.current_policy: Optional[List] = None
         self._rdp_generator: AbstractRDPGenerator = RDPGenerator(env, nb_rewards, None)  # type: ignore
 
         # these are used to compute the optimal policy.
-        self.current_state = 0
+        self.current_state: Optional[int] = 0
 
         self._reset()
 
     def _reset(self):
         """Reset the state of the agent."""
-        self.current_l = 1
         self.pdfa: Optional[PDFA] = None
-        self._iteration_reset()
+        self.dataset: List[Word] = []
+        self.current_p = stop_probability_from_D(self.max_depth)
         self._episode_reset()
 
     def _episode_reset(self):
         """Episode reset."""
         self.current_episode = []
         self.current_state = 0
-
-    def _iteration_reset(self):
-        """Reset after the end of one iteration."""
-        self.current_p = stop_probability_from_l(self.current_l)
-        self.current_M = max_number_of_steps(self.current_l)
-        self.dataset: List[Word] = []
-        self.current_i = 0
-        self.hard_stop = False
         self.stop = False
 
     def done(self) -> bool:
         """Return true when either we should stop or a hard stop happened."""
-        return self.stop or self.hard_stop
-
-    def should_stop(self) -> bool:
-        """Check if the next action should be the stop action."""
+        return self.stop
 
     def _should_stop(self) -> bool:
         """Check that next action should be the stop action."""
         return np.random.random() < self.current_p
-
-    def _should_hard_stop(self) -> bool:
-        """Check that next action should be a hard-stop."""
-        return (self.current_M - self.current_i) <= len(self.current_episode)
 
     def _add_trace(self):
         """Add current trace to dataset."""
@@ -125,10 +105,12 @@ class PacRdpAgent(Agent):
         """Observe a transition."""
         self.current_episode.append(agent_observation)
         self.stop = self._should_stop()
-        self.hard_stop = self._should_hard_stop()
 
     def do_pdfa_transition(self, agent_observation: AgentObservation):
         """Do a PDFA transition."""
+        if self.pdfa is None:
+            self.current_state = None
+            return
         self.pdfa = cast(PDFA, self.pdfa)
         s, a, r, sp, done = agent_observation
         symbol = self._rdp_generator.encoder((a, int(r), sp))
@@ -143,7 +125,7 @@ class PacRdpAgent(Agent):
             return
         pdfa = learn_pdfa(
             dataset=self.dataset,
-            n=self.current_l,
+            n=self.max_depth,
             alphabet_size=self._rdp_generator.alphabet_size(),
             delta=self.delta ** 2,
             with_infty_norm=False,
@@ -165,11 +147,6 @@ class PacRdpAgent(Agent):
         )
         logging.info("Value iteration completed.")
 
-        self._iteration_reset()
-        logging.info(f"New l: {self.current_l}")
-        logging.info(f"New M: {self.current_M}")
-        logging.info(f"New p: {self.current_p}")
-
     def train(
         self,
         env: gym.Env,
@@ -180,36 +157,26 @@ class PacRdpAgent(Agent):
         """Train."""
         context = Context(experiment_name, self, env, callbacks)
         context.on_training_begin()
-        episode = 0
-        for self.current_l in range(1, self.max_l + 1):
-            if episode > nb_episodes:
-                break
-            self._iteration_reset()
-            while not self.hard_stop:
-                if episode > nb_episodes:
-                    break
-                state = env.reset()
-                done = False
-                step = 0
-                self._episode_reset()
-                self.stop = self._should_stop()
-                self.hard_stop = self._should_hard_stop()
-                context.on_episode_begin(episode)
-                while not done and not self.done():
-                    action = random_policy(self, state)
-                    context.on_step_begin(step, action)
-                    state2, reward, done, info = env.step(action)
-                    observation = (state, action, reward, state2, done)
-                    self.observe(observation)
-                    context.on_step_end(step, observation)
-                    state = state2
-                    step += 1
-                if not self.hard_stop:
-                    self._add_trace()
-                    self.current_i += len(self.current_episode)
-                episode += 1
-                context.on_episode_end(episode)
-            self._learn_pdfa()
+        for episode in range(nb_episodes):
+            state = env.reset()
+            done = False
+            step = 0
+            self._episode_reset()
+            self.stop = self._should_stop()
+            context.on_episode_begin(episode)
+            while not done and not self.done():
+                action = random_policy(self, state)
+                context.on_step_begin(step, action)
+                state2, reward, done, info = env.step(action)
+                observation = (state, action, reward, state2, done)
+                self.observe(observation)
+                context.on_step_end(step, observation)
+                state = state2
+                step += 1
+            self._add_trace()
+            if episode != 0 and episode % self.update_frequency == 0:
+                self._learn_pdfa()
+            context.on_episode_end(episode)
         context.on_training_end()
 
     def test(
