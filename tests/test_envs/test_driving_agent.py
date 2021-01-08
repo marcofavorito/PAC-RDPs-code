@@ -121,7 +121,7 @@ def test_q_learning_learns_optimal_policy():
     """Test Q-Learning learns the optimal policy on Driving agent (Markovian)."""
     env = TimeLimit(DrivingAgentEnv(), max_episode_steps=100)
     agent = QLearning(env.observation_space, env.action_space, make_eps_greedy_policy())
-    agent.train(env, nb_episodes=1000)
+    agent.train(env, nb_episodes=25100)
 
     stats_callback = StatsCallback()
     agent.test(env, nb_episodes=100, callbacks=[stats_callback])

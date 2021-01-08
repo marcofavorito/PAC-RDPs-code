@@ -1,0 +1,52 @@
+{
+  "environment": {
+    "entrypoint": "experiments.common.envs.make_rotmab_env",
+    "kwargs": {
+      "winning_probs": [
+        0.10,
+        0.20,
+        0.90
+      ],
+      "max_episode_steps": 100
+    }
+  },
+  "experiment": {
+    "nb_episodes": 16000,
+    "nb_runs": 8,
+    "nb_processes": 8,
+    "checkpoint_frequency": 500,
+    "seeds": null
+  },
+  "algorithms": [
+    {
+      "id": "q-learning",
+      "entrypoint": "experiments.common.base.run_q_learning",
+      "kwargs": {
+        "epsilon": 0.1,
+        "alpha": 0.1,
+        "gamma": 0.99
+      }
+    },
+    {
+      "id": "pac-rdp",
+      "entrypoint": "experiments.common.base.run_pac_rdp",
+      "kwargs": {
+        "epsilon": 0.05,
+        "delta": 0.05,
+        "gamma": 0.99,
+        "max_l": 10
+      }
+    },
+    {
+      "id": "pac-rdp-simple",
+      "entrypoint": "experiments.common.base.run_pac_rdp_simple",
+      "kwargs": {
+        "epsilon": 0.05,
+        "delta": 0.05,
+        "gamma": 0.99,
+        "max_depth": 10,
+        "update_frequency": 500
+      }
+    }
+  ]
+}

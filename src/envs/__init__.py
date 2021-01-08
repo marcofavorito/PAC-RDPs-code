@@ -3,9 +3,9 @@
 
 import gym
 
+from .cheat_mab import *  # noqa: ignore
 from .malfunction_mab import *  # noqa: ignore
 from .rotating_mab import *  # noqa: ignore
-from .sequential_mab import *  # noqa: ignore
 
 gym.register(
     id="RotatingMAB-v0",
@@ -31,9 +31,7 @@ gym.register(
     max_episode_steps=100,
 )
 
-gym.register(
-    id="SequentialMAB-v0", entry_point="src:SequentialMAB", max_episode_steps=100
-)
+gym.register(id="CheatMAB-v0", entry_point="src:CheatMAB", max_episode_steps=100)
 
 
 gym.register(
