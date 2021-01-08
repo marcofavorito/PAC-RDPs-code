@@ -9,7 +9,7 @@
     "nb_episodes": 50000,
     "nb_runs": 8,
     "nb_processes": 8,
-    "checkpoint_frequency": 1000,
+    "checkpoint_frequency": 5000,
     "seeds": null
   },
   "algorithms": [
@@ -30,7 +30,7 @@
       "id": "pac-rdp-simple",
       "entrypoint": "experiments.common.base.run_pac_rdp_simple",
       "kwargs": {
-        "update_frequency": 1000
+        "update_frequency": 5000
       }
     }
   ]
