@@ -171,10 +171,7 @@ class Node:
     @cached
     def __hash__(self) -> int:
         """Get hash."""
-        if self._cached_hash:
-            return self._cached_hash
-        self._cached_hash = hash((Node, self.index, self._tree_metadata))
-        return self._cached_hash
+        return hash((Node, self.index, self._tree_metadata))
 
 
 class PrefixTreeMultiset(Multiset):
@@ -258,8 +255,6 @@ class ReadOnlyPrefixTreeMultiset(Multiset):
         """
         self._nodes = nodes if nodes is not None else {Node(parent=None)}
 
-        self._cached_size = None
-
     def get_successors(self) -> Dict[Character, "ReadOnlyPrefixTreeMultiset"]:
         """Get successors."""
         successors: Dict[Character, Set[Node]] = {}
@@ -284,15 +279,7 @@ class ReadOnlyPrefixTreeMultiset(Multiset):
     @cached
     def size(self) -> int:
         """Get the size."""
-        if self._cached_size:
-            return self._cached_size
-        self._cached_size = sum(n.children_counts for n in self._nodes)
-        return self.size
-
-    @property
-    def prefixes_size(self) -> int:
-        """Get the size of all the multiset of all the prefixes."""
-        return sum(n.prefixes_size for n in self._nodes)
+        return sum(n.children_counts for n in self._nodes)
 
     @property
     def prefixes_size(self) -> int:

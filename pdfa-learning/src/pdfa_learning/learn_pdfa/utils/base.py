@@ -32,7 +32,7 @@ from pdfa_learning.learn_pdfa.utils.multiset.tree import (
 )
 from pdfa_learning.types import Word
 
-MultisetLike = Multiset
+MultisetLike = Union[Multiset, Counter]
 
 
 def prefixes(t: Word) -> Iterable:
