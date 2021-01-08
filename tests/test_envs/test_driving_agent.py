@@ -8,14 +8,18 @@ from src.callbacks.stats import StatsCallback
 from src.core import make_eps_greedy_policy
 from src.envs.driving_agent import (
     CAR_CONDITION,
+    CLOUDY,
     DRIVE_NORMAL,
     DRIVE_SLOW,
+    NO_ACCIDENT,
     REWARD_NORMAL,
     REWARD_SLOW,
     ROAD_STATE,
+    SUNNY,
     WEATHER,
     WET,
     DrivingAgentEnv,
+    NonMarkovianDrivingAgentEnv,
 )
 
 EXPECTED_DYNAMICS = {
@@ -123,3 +127,27 @@ def test_q_learning_learns_optimal_policy():
     agent.test(env, nb_episodes=100, callbacks=[stats_callback])
     stats = stats_callback.get_stats()
     assert np.min(stats.episode_lengths) == 100
+
+
+def test_q_learning_learns_suboptimal_policy_nonmarkovian():
+    """Test Q-Learning learns a sub-optimal policy on non-Markovian Driving agent."""
+    env = TimeLimit(NonMarkovianDrivingAgentEnv(), max_episode_steps=100)
+    agent = QLearning(env.observation_space, env.action_space, make_eps_greedy_policy())
+    agent.train(env, nb_episodes=1000)
+
+    stats_callback = StatsCallback()
+    agent.test(env, nb_episodes=100, callbacks=[stats_callback])
+    stats = stats_callback.get_stats()
+
+    # Q-Learning learns to don't get an accident (but suboptimally)
+    assert np.min(stats.episode_lengths) == 100
+
+    sunny_noacc = env.nm_encoder((SUNNY, NO_ACCIDENT))
+    cloudy_noacc = env.nm_encoder((CLOUDY, NO_ACCIDENT))
+    wet_noacc = env.nm_encoder((WET, NO_ACCIDENT))
+    # best learned action when sunny: drive normal
+    assert agent.choose_best_action(sunny_noacc) == DRIVE_NORMAL
+    # best learned action when cloudy: drive slow (sub-optimal!)
+    assert agent.choose_best_action(cloudy_noacc) == DRIVE_SLOW
+    # best learned action when wet: drive slow
+    assert agent.choose_best_action(wet_noacc) == DRIVE_SLOW
