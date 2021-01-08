@@ -17,20 +17,30 @@
       "id": "q-learning",
       "entrypoint": "experiments.common.base.run_q_learning",
       "kwargs": {
-        "epsilon": 0.1
+        "epsilon": 0.1,
+        "alpha": 0.1,
+        "gamma": 0.99
       }
     },
     {
       "id": "pac-rdp",
       "entrypoint": "experiments.common.base.run_pac_rdp",
       "kwargs": {
+        "epsilon": 0.05,
+        "delta": 0.05,
+        "gamma": 0.99,
+        "max_l": 10
       }
     },
     {
       "id": "pac-rdp-simple",
       "entrypoint": "experiments.common.base.run_pac_rdp_simple",
       "kwargs": {
-        "update_frequency": 5000
+        "epsilon": 0.05,
+        "delta": 0.05,
+        "gamma": 0.99,
+        "max_depth": 10,
+        "update_frequency": 500
       }
     }
   ]

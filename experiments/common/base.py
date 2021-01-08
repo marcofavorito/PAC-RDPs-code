@@ -20,11 +20,15 @@ def run_q_learning(
     experiment_dir: Path,
     env: gym.Env,
     epsilon: float = 0.1,
+    alpha: float = 0.1,
+    gamma: float = 0.99,
     checkpoint_frequency: int = 500,
     **experiment_configs
 ):
     """Run Q-Learning experiments."""
-    agent_params: Dict = dict(policy=make_eps_greedy_policy(epsilon))
+    agent_params: Dict = dict(
+        policy=make_eps_greedy_policy(epsilon), alpha=alpha, gamma=gamma
+    )
     callbacks = [Checkpoint(checkpoint_frequency, experiment_dir / experiment_id)]
     experiment = Experiment(
         experiment_id,
@@ -42,11 +46,15 @@ def run_pac_rdp(
     experiment_id: str,
     experiment_dir: Path,
     env: gym.Env,
+    epsilon: float = 0.05,
+    delta: float = 0.05,
+    gamma: float = 0.99,
+    max_l: int = 10,
     checkpoint_frequency: int = 500,
     **experiment_configs
 ):
     """Run PAC-RDP experiments (v1)."""
-    agent_params = dict(env=env)
+    agent_params = dict(env=env, epsilon=epsilon, delta=delta, gamma=gamma, max_l=max_l)
     callbacks = [RDPCheckpoint(checkpoint_frequency, experiment_dir / experiment_id)]
     experiment = Experiment(
         experiment_id,
@@ -64,12 +72,23 @@ def run_pac_rdp_simple(
     experiment_id: str,
     experiment_dir: Path,
     env: gym.Env,
+    epsilon: float = 0.05,
+    delta: float = 0.05,
+    gamma: float = 0.99,
+    max_depth: int = 10,
     update_frequency: int = 500,
     checkpoint_frequency: int = 500,
     **experiment_configs
 ):
     """Run PAC-RDL experiments (v2)."""
-    agent_params = dict(env=env, update_frequency=update_frequency)
+    agent_params = dict(
+        env=env,
+        epsilon=epsilon,
+        delta=delta,
+        gamma=gamma,
+        max_depth=max_depth,
+        update_frequency=update_frequency,
+    )
     callbacks = [RDPCheckpoint(checkpoint_frequency, experiment_dir / experiment_id)]
     experiment = Experiment(
         experiment_id,

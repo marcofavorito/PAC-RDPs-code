@@ -2,6 +2,7 @@
 import logging
 import pprint
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import Any, List, Optional, cast
 
 from gym import Space
@@ -116,3 +117,15 @@ class BasePacRdpAgent(Agent, ABC):
             new_env, max_iterations=50, discount=self.gamma
         )
         logging.info("Value iteration completed.")
+
+    def __getstate__(self):
+        """Get state."""
+        result = copy(self.__dict__)
+        result.pop("dataset")
+        return result
+
+    def __setstate__(self, d):
+        """Get state."""
+        result = copy(d)
+        result.setdefault("dataset", None)
+        self.__dict__ = result

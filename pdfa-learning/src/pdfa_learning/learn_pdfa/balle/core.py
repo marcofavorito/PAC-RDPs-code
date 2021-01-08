@@ -32,6 +32,7 @@ from pdfa_learning.learn_pdfa.balle.params import BalleParams
 from pdfa_learning.learn_pdfa.utils.base import (
     MultisetLike,
     get_prefix_probability,
+    prefixes_size,
     size,
 )
 from pdfa_learning.learn_pdfa.utils.multiset.tree import (
@@ -114,7 +115,9 @@ class SampleMultisetManager:
             samples = list(map(lambda x: tuple(x), samples))
         else:
             samples = self.params.dataset
-        self.average_trace_length = sum(map(len, samples)) / len(samples) if len(samples) != 0 else 0
+        self.average_trace_length = (
+            sum(map(len, samples)) / len(samples) if len(samples) != 0 else 0
+        )
         logger.info(f"Average trace length: {self.average_trace_length}.")
         logger.info("Populate root multiset.")
         self.main_multiset.update(samples)
@@ -202,13 +205,13 @@ class PDFAConstructor:
     def _compute_edge_probability(self, state: int, character: int):
         """Given state and character, compute probability."""
         multiset = self.graph.vertex2multiset.get(state, ConcreteMultiset())  # type: ignore
-        size = sum(multiset.values())
+        multiset_size = size(multiset)
         smoothing_probability = (
             self.params.get_gamma_min(self.sample.average_trace_length)
             if self.params.with_smoothing
             else 0.0
         )
-        if size == 0:
+        if multiset_size == 0:
             return self.params.get_gamma_min(self.sample.average_trace_length)
         char_prob = get_prefix_probability(multiset, (character,))
         factor = 1 - (self.params.alphabet_size + 1) * smoothing_probability
@@ -272,7 +275,7 @@ class CandidateNodesCalculator:
             chosen_candidate_node,
             biggest_multiset,
         ) = self.compute_multisets_and_get_biggest()
-        if sum(biggest_multiset.values()) == 0:
+        if size(biggest_multiset) == 0:
             logger.info("Biggest multiset has cardinality 0, done")
             return True
 
@@ -370,7 +373,7 @@ class CandidateNodesCalculator:
         """Compute the biggest multiset."""
         return max(
             self.multisets.items(),
-            key=lambda x: sum(x[1].values()),
+            key=lambda x: size(x[1]),
             default=(-1, self.multiset_cls()),
         )
 
@@ -394,12 +397,8 @@ class CandidateNodesCalculator:
         """Test distinctness of two vertices."""
         multiset_candidate = self.multisets[chosen_candidate_node]
         multiset_safe = self.graph.vertex2multiset[v]
-        prefixes_candidate = sum(
-            [(len(trace) + 1) * count for trace, count in multiset_candidate.items()]
-        )
-        prefixes_safe = sum(
-            [(len(trace) + 1) * count for trace, count in multiset_safe.items()]
-        )
+        prefixes_candidate = prefixes_size(multiset_candidate)
+        prefixes_safe = prefixes_size(multiset_safe)
         threshold = _compute_threshold(
             size(multiset_candidate),
             size(multiset_safe),

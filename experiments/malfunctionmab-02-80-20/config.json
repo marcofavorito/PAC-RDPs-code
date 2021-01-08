@@ -1,19 +1,17 @@
 {
   "environment": {
-    "entrypoint": "experiments.common.envs.make_rotmab_env",
+    "entrypoint": "experiments.common.envs.make_malfunctionmab_env",
     "kwargs": {
-      "winning_probs": [
-        0.90,
-        0.20
-      ],
+      "winning_probs": [0.8, 0.2],
+      "k": 3,
       "max_episode_steps": 100
     }
   },
   "experiment": {
-    "nb_episodes": 8000,
-    "nb_runs": 32,
+    "nb_episodes": 100000,
+    "nb_runs": 1,
     "nb_processes": 8,
-    "checkpoint_frequency": 500,
+    "checkpoint_frequency": 2500,
     "seeds": null
   },
   "algorithms": [
@@ -44,7 +42,7 @@
         "delta": 0.05,
         "gamma": 0.99,
         "max_depth": 10,
-        "update_frequency": 500
+        "update_frequency": 2500
       }
     }
   ]
