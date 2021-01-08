@@ -41,11 +41,12 @@ class BaseTestMalfunctionMAB:
         nb_steps = 0
         self.env.reset()
         done = False
-        counter = 0
+        bad_action = self.MALFUNCTIONING_ARM
         while not done:
             action = self.env.action_space.sample()
-            _, reward, done, _ = self.env.step(action)
-            counter += 1 if action == self.MALFUNCTIONING_ARM else 0
+            state, reward, done, _ = self.env.step(action)
+            # reward can't be obtained if arm is broken
+            assert not (state == (self.K + 1) and action == bad_action) or reward == 0
             nb_steps += 1
 
         # the environment is never done
