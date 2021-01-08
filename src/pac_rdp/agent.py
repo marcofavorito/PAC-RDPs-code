@@ -1,22 +1,18 @@
 # -*- coding: utf-8 -*-
 """This module contains the main code for the algorithm."""
 import logging
-import pprint
 from math import log
 from typing import Collection, Optional, cast
 
 import gym
 import numpy as np
 from gym import Space
-from pdfa_learning.learn_pdfa.base import learn_pdfa
 from pdfa_learning.pdfa import PDFA
 
-from src.algorithms.value_iteration import value_iteration
 from src.callbacks.base import Callback
 from src.core import Context, random_policy
 from src.helpers.gym import DiscreteEnv
 from src.pac_rdp.base import BasePacRdpAgent
-from src.pac_rdp.helpers import RDPGenerator, mdp_from_pdfa
 from src.types import AgentObservation
 
 
@@ -44,8 +40,8 @@ class PacRdpAgent(BasePacRdpAgent):
         observation_space: Space,
         action_space: Space,
         env: DiscreteEnv,
-        epsilon: float = 0.1,
-        delta: float = 0.1,
+        epsilon: float = 0.05,
+        delta: float = 0.05,
         gamma: float = 0.9,
         max_l: int = 10,
     ):
@@ -60,6 +56,14 @@ class PacRdpAgent(BasePacRdpAgent):
         )
         self.max_l = max_l
         self._reset()
+
+    def get_upperbound(self) -> int:
+        """Get upperbound on number of states."""
+        return self.current_l
+
+    def get_stop_probability(self) -> float:
+        """Get current stop probability."""
+        return self.current_p
 
     def _encode_reward(self, reward: float) -> int:
         """Encode the reward."""
@@ -119,33 +123,7 @@ class PacRdpAgent(BasePacRdpAgent):
         )[0]
 
     def _learn_pdfa(self):
-        """Learn the PDFA."""
-        if len(self.dataset) == 0:
-            logging.error("Dataset length is 0.")
-            return
-        pdfa = learn_pdfa(
-            dataset=self.dataset,
-            n=self.current_l,
-            alphabet_size=self._rdp_generator.alphabet_size(),
-            delta=self.delta ** 2,
-            with_infty_norm=False,
-            with_smoothing=True,
-        )
-        self.pdfa = pdfa
-
-        new_env = mdp_from_pdfa(
-            cast(PDFA, self.pdfa),
-            cast(RDPGenerator, self._rdp_generator),
-            stop_probability=self.current_p,
-        )
-        logging.info("Computed MDP.")
-        logging.info(f"Observation space: {new_env.observation_space}")
-        logging.info(f"Action space: {new_env.action_space}")
-        logging.info(f"Dynamics:\n{pprint.pformat(new_env.P)}")
-        self.value_function, self.current_policy = value_iteration(
-            new_env, max_iterations=50, discount=self.gamma
-        )
-        logging.info("Value iteration completed.")
+        super()._learn_pdfa()
 
         self._iteration_reset()
         logging.info(f"New l: {self.current_l}")

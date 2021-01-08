@@ -23,7 +23,7 @@ class Checkpoint(Callback):
         nb_trials: int = 50,
         save_env: bool = True,
         save_history: bool = True,
-        save_agent: bool = False,
+        save_agent: bool = True,
     ):
         """
         Initialize the checkpoint callback.
