@@ -32,6 +32,11 @@ gym.register(
 )
 
 gym.register(id="CheatMAB-v0", entry_point="src:CheatMAB", max_episode_steps=100)
+gym.register(
+    id="NonMarkovianCheatMAB-v0",
+    entry_point="src:NonMarkovianCheatMAB",
+    max_episode_steps=100,
+)
 
 
 gym.register(

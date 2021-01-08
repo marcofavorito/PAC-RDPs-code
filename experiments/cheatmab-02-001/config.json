@@ -1,17 +1,14 @@
 {
   "environment": {
-    "entrypoint": "experiments.common.envs.make_rotmab_env",
+    "entrypoint": "experiments.common.envs.make_cheatmab_env",
     "kwargs": {
-      "winning_probs": [
-        0.10,
-        0.20,
-        0.90
-      ],
+      "nb_arms": 2,
+      "pattern": [0, 0, 1],
       "max_episode_steps": 100
     }
   },
   "experiment": {
-    "nb_episodes": 16000,
+    "nb_episodes": 10000,
     "nb_runs": 8,
     "nb_processes": 8,
     "checkpoint_frequency": 500,

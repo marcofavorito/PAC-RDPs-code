@@ -84,8 +84,8 @@ class CheatMAB(DiscreteEnv):
         return P
 
 
-class NonMarkovianSequentialMAB(gym.Wrapper):
-    """Non-Markovian Sequential MAB."""
+class NonMarkovianCheatMAB(gym.Wrapper):
+    """Non-Markovian CheatMAB."""
 
     def __init__(self, *args, **kwargs):
         """Initialize a non-Markovian sequential MAB."""

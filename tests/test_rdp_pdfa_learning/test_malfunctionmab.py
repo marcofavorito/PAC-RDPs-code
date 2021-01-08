@@ -2,7 +2,6 @@
 from typing import Tuple
 
 import gym
-import pytest
 
 from tests.test_rdp_pdfa_learning.base import BaseTestPdfaRdp
 
@@ -43,7 +42,6 @@ class TestMalfunctionMAB2ArmsNondetK2(BaseTestMalfunctionMAB):
     OVERWRITE_CONFIG = dict(nb_samples=50000)
 
 
-@pytest.mark.exclude_ci
 class TestMalfunctionMAB2ArmsNondetK3(BaseTestMalfunctionMAB):
     """Test learning rotating MAB with 2 arms, nondeterministic, k=1."""
 
