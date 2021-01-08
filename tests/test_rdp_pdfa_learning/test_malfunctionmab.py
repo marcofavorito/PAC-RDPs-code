@@ -50,4 +50,4 @@ class TestMalfunctionMAB2ArmsNondetK3(BaseTestMalfunctionMAB):
     MAX_EPISODE_STEPS = 500
     WINNING_PROBABILITIES = (0.8, 0.2)
     K = 3
-    OVERWRITE_CONFIG = dict(stop_probability=0.05, nb_samples=100000)
+    OVERWRITE_CONFIG = dict(stop_probability=0.05, nb_samples=200000)
