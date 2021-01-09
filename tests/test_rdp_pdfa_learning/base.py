@@ -10,23 +10,25 @@ from pdfa_learning.pdfa.helpers import FINAL_SYMBOL
 from pdfa_learning.pdfa.render import to_graphviz
 from pdfa_learning.types import Word
 
+from tests.conftest import get_nb_processes
+
 from src.pac_rdp.agent import PacRdpAgent
 from src.pac_rdp.helpers import RDPGenerator, random_exploration_policy
 
 RDP_DEFAULT_CONFIG = dict(
     stop_probability=0.2,
-    nb_samples=150000,
+    nb_samples=20000,
     delta=0.05,
     epsilon=0.05,
     n_upperbound=10,
-    nb_processes=8,
+    nb_processes=get_nb_processes(),
 )
 
 
 class BaseTestPdfaRdp:
     """Base test class for rotating MAB PDFA learning."""
 
-    NB_PROCESSES = 8
+    NB_PROCESSES = get_nb_processes()
     MAX_EPISODE_STEPS = 100
     CONFIG: Dict = RDP_DEFAULT_CONFIG
     OVERWRITE_CONFIG: Dict = {}

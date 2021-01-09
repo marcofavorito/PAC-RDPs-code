@@ -1,8 +1,10 @@
 """RotMAB experiments."""
+from typing import List
 
 import gym
 from gym.wrappers import TimeLimit
 
+from src import NonMarkovianCheatMAB
 from src.envs.driving_agent import NonMarkovianDrivingAgentEnv
 from src.envs.malfunction_mab import NonMarkovianMalfunctionMAB
 from src.envs.rotating_mab import NonMarkovianRotatingMAB
@@ -24,6 +26,16 @@ def make_malfunctionmab_env(
         NonMarkovianMalfunctionMAB(
             winning_probs=winning_probs, k=k, malfunctioning_arm=malfunctioning_arm
         ),
+        max_episode_steps=max_episode_steps,
+    )
+
+
+def make_cheatmab_env(
+    nb_arms: int, pattern: List[int], max_episode_steps: int = 100
+) -> gym.Env:
+    """Make environment."""
+    return TimeLimit(
+        NonMarkovianCheatMAB(nb_arms=nb_arms, pattern=pattern, terminate_on_win=False),
         max_episode_steps=max_episode_steps,
     )
 
