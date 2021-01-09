@@ -35,7 +35,7 @@ def make_cheatmab_env(
 ) -> gym.Env:
     """Make environment."""
     return TimeLimit(
-        NonMarkovianCheatMAB(nb_arms=nb_arms, pattern=pattern),
+        NonMarkovianCheatMAB(nb_arms=nb_arms, pattern=pattern, terminate_on_win=False),
         max_episode_steps=max_episode_steps,
     )
 
