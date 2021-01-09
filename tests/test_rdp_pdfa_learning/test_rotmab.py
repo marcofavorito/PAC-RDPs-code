@@ -2,6 +2,7 @@
 from typing import Tuple
 
 import gym
+import pytest
 
 from tests.test_rdp_pdfa_learning.base import BaseTestPdfaRdp
 
@@ -37,6 +38,7 @@ class TestRotatingMAB3ArmsDet(BaseTestRotatingMAB):
     OVERWRITE_CONFIG = dict(nb_samples=25000)
 
 
+@pytest.mark.exclude_ci
 class TestRotatingMAB3ArmsNondet(BaseTestRotatingMAB):
     """Test learning rotating MAB with 3 arms, nondeterministic."""
 
@@ -51,6 +53,7 @@ class TestRotatingMAB4ArmsDet(BaseTestRotatingMAB):
     OVERWRITE_CONFIG = dict(nb_samples=75000)
 
 
+@pytest.mark.exclude_ci
 class TestRotatingMAB4ArmsNondet(BaseTestRotatingMAB):
     """Test learning rotating MAB with 4 arms, nondeterministic."""
 
@@ -65,6 +68,7 @@ class TestRotatingMAB5ArmsDet(BaseTestRotatingMAB):
     OVERWRITE_CONFIG = dict(nb_samples=75000, stop_probability=0.1)
 
 
+@pytest.mark.exclude_ci
 class TestRotatingMAB5ArmsNondet(BaseTestRotatingMAB):
     """Test learning rotating MAB with 5 arms, nondeterministic."""
 

@@ -36,6 +36,7 @@ class TestCheatMAB2Arms(BaseTestCheatMAB):
     OVERWRITE_CONFIG = dict(nb_samples=50000)
 
 
+@pytest.mark.exclude_ci
 class TestCheatMAB3Arms(BaseTestCheatMAB):
     """Test learning rotating MAB with 3 arms."""
 
@@ -44,6 +45,7 @@ class TestCheatMAB3Arms(BaseTestCheatMAB):
     OVERWRITE_CONFIG = dict(nb_samples=75000)
 
 
+@pytest.mark.exclude_ci
 class TestCheatMAB4ArmsLen3(BaseTestCheatMAB):
     """Test learning rotating MAB with 4 arms, pattern of length 3."""
 
@@ -51,13 +53,3 @@ class TestCheatMAB4ArmsLen3(BaseTestCheatMAB):
     PATTERN = [0, 1, 2]
     NB_ARMS = 4
     OVERWRITE_CONFIG = dict(stop_probability=0.05, nb_samples=200000)
-
-
-@pytest.mark.exclude_ci
-class TestCheatMAB4ArmsLen4(BaseTestCheatMAB):
-    """Test learning rotating MAB with 4 arms, pattern of length 4."""
-
-    MAX_EPISODE_STEPS = 200
-    PATTERN = [0, 1, 2, 3]
-    NB_ARMS = 4
-    OVERWRITE_CONFIG = dict(stop_probability=0.05, nb_samples=700000)

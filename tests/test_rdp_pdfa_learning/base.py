@@ -17,7 +17,7 @@ from src.pac_rdp.helpers import RDPGenerator, random_exploration_policy
 
 RDP_DEFAULT_CONFIG = dict(
     stop_probability=0.2,
-    nb_samples=150000,
+    nb_samples=20000,
     delta=0.05,
     epsilon=0.05,
     n_upperbound=10,
