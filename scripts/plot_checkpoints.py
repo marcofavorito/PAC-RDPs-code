@@ -11,8 +11,6 @@ from typing import List
 import numpy as np
 
 from src.helpers.stats import stats_from_json
-from yarllib.helpers.history import history_from_json, EpisodeHistory
-from yarllib.helpers.plots import plot_summaries
 
 
 def _is_dir(p: Path):

@@ -22,7 +22,9 @@ RUN apt-get install -y                                                       \
        libffi-dev                                                            \
        python3-venv                                                          \
        python3-pip                                                           \
-       python3-dev
+       python3-dev                                                           \
+       graphviz                                                              \
+       libgraphviz-dev
 
 # matplotlib build dependencies
 RUN apt-get install -y                                                       \

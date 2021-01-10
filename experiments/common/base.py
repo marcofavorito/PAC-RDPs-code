@@ -1,6 +1,7 @@
 """Common functions."""
+import pprint
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import gym
 
@@ -102,15 +103,25 @@ def run_pac_rdp_simple(
     return stats
 
 
-def run_experiment_from_config(experiment_dir: Path, config: Dict):
+def run_experiment_from_config(
+    experiment_dir: Path,
+    config: Dict,
+    overwrite_experiment_config: Optional[Dict] = None,
+):
     """Run experiments from configuration."""
+    # configure experiments
+    pprint.pprint("Configurations: ")
+    pprint.pprint(config)
+    pprint.pprint("Overwrite configurations: ")
+    pprint.pprint(overwrite_experiment_config)
+    experiment_configs = config["experiment"]
+    overwrite_experiment_config = overwrite_experiment_config or {}
+    experiment_configs.update(overwrite_experiment_config)
+
     # configure env
     env_config = config["environment"]
     env_entrypoint = locate(env_config["entrypoint"])
     env = env_entrypoint(**env_config["kwargs"])
-
-    # configure experiments
-    experiment_configs = config["experiment"]
 
     # run experiments
     algorithm_configs = config["algorithms"]

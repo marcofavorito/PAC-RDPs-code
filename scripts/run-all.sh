@@ -9,7 +9,7 @@ OUTPUT_DIR="${1:-${DEFAULT_OUTPUT_DIR}}"
 ENVS="${2:-${DEFAULT_ENVS}}"
 
 for env in ${ENVS}; do
-  python3 scripts/run.py experiments/${env}/config.json --output-dir ${OUTPUT_DIR}/${env}
+  python3 scripts/run.py experiments/${env}/config.json --output-dir ${OUTPUT_DIR}/${env} --overwrite experiments/global.json
 done
 
 set +e
