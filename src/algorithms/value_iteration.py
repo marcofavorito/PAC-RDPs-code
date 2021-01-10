@@ -57,7 +57,7 @@ class _ValueIteration:
         """Run value iteration against a DiscreteEnv environment."""
         delta = np.inf
         iteration = 0
-        while (self.eps and not delta < self.eps) and iteration < self.nb_iterations:
+        while (not self.eps or not delta < self.eps) and iteration < self.nb_iterations:
             delta = 0
             next_v = self._new_value_function()
             for s in iter_space(self.env.observation_space):

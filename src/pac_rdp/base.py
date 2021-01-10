@@ -126,10 +126,10 @@ class BasePacRdpAgent(Agent, ABC):
 
         nb_iterations = math.ceil(self._compute_nb_iteration_vi())
         logging.info(f"Executing Value Iteration for {nb_iterations} iterations.")
-        logging.info("Value iteration completed.")
         self.value_function, self.current_policy = value_iteration(
             new_env, nb_iterations=nb_iterations, discount=self.gamma
         )
+        logging.info("Value iteration completed.")
 
     def __getstate__(self):
         """Get state."""
