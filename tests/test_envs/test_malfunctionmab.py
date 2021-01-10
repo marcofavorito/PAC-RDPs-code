@@ -1,4 +1,6 @@
 """Test environments."""
+import logging
+
 import numpy as np
 from gym.spaces import Discrete
 from gym.wrappers import TimeLimit
@@ -65,9 +67,9 @@ class TestMalfunctionMAB(BaseTestMalfunctionMAB):
 def test_q_learning_learns_optimal_policy():
     """Test Q-Learning learns the optimal policy on MalfunctionMAB (Markovian)."""
     max_steps = 100
-    k = 3
+    k = 2
     nb_states = k + 1
-    p1, p2 = 0.7, 0.3
+    p1, p2 = 0.8, 0.2
     env = TimeLimit(MalfunctionMAB([p1, p2], k, 0), max_episode_steps=max_steps)
     agent = QLearning(env.observation_space, env.action_space, make_eps_greedy_policy())
     agent.train(env, nb_episodes=2500)
@@ -77,4 +79,5 @@ def test_q_learning_learns_optimal_policy():
     stats = stats_callback.get_stats()
     expected_average = p1 * (max_steps * k / nb_states) + p2 * (max_steps / nb_states)
     actual_average = np.mean(stats.episode_rewards)
+    logging.debug(f"Expected average reward: {expected_average}")
     assert np.isclose(actual_average, expected_average, rtol=0.01)
