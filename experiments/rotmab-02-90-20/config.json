@@ -11,7 +11,7 @@
   },
   "experiment": {
     "nb_episodes": 20000,
-    "nb_runs": 64,
+    "nb_runs": 8,
     "nb_processes": 8,
     "checkpoint_frequency": 500,
     "seeds": null

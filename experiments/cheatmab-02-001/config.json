@@ -9,7 +9,7 @@
   },
   "experiment": {
     "nb_episodes": 50000,
-    "nb_runs": 64,
+    "nb_runs": 8,
     "nb_processes": 8,
     "checkpoint_frequency": 500,
     "seeds": null
