@@ -72,7 +72,7 @@ def test_q_learning_learns_optimal_policy():
     p1, p2 = 0.8, 0.2
     env = TimeLimit(MalfunctionMAB([p1, p2], k, 0), max_episode_steps=max_steps)
     agent = QLearning(env.observation_space, env.action_space, make_eps_greedy_policy())
-    agent.train(env, nb_episodes=2500)
+    agent.train(env, nb_episodes=5000)
 
     stats_callback = StatsCallback()
     agent.test(env, nb_episodes=500, callbacks=[stats_callback])
