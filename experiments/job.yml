@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: experiment-
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 2147483647
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: experiment-image
+        image: gcr.io/pac-rdp-learning/experiment-image
+        command: ["pipenv", "run", "./scripts/run-all.sh", "/var/lib/experiments/data/${MY_POD_NAME}"]
+        env:
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+        volumeMounts:
+        - mountPath: /var/lib/experiments/data
+          name: experiment-data-claim
+        resources:
+          requests:
+            memory: "24Gi"
+            cpu: "6"
+          limits:
+            memory: "24Gi"
+            cpu: "6"
+      volumes:
+      - name: experiment-data-claim
+        persistentVolumeClaim:       
+          claimName: experiment-data-claim
