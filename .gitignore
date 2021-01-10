@@ -688,4 +688,7 @@ output/
 outputs/
 .github_access_token
 code/
+report/pdfa-*
+report/*.pdf_tex
+!report/pdfa-*.pdf
 

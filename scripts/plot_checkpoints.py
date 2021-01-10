@@ -85,10 +85,13 @@ if __name__ == '__main__':
         average_rewards = experiment_data.mean(axis=2)
         average_rewards_mean = average_rewards.mean(axis=0)
         average_rewards_std = average_rewards.std(axis=0)
+        min_len = min([len(h[0]) for h in history])
         steps = steps[:min_len]
         average_rewards_mean = average_rewards_mean[:min_len]
         average_rewards_std = average_rewards_std[:min_len]
         sns_ax = sns.lineplot(steps, average_rewards_mean, label=label)
         sns_ax.fill_between(steps, average_rewards_mean - average_rewards_std, average_rewards_mean + average_rewards_std, alpha=0.3)
+    plt.xlabel("Episodes")
+    plt.ylabel("Episode rewards")
     plt.savefig(Path(output_dir) / "plot.svg")
     plt.show()
