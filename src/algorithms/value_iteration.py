@@ -21,7 +21,7 @@
 #
 """Value iteration implementation."""
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -34,15 +34,15 @@ class _ValueIteration:
     def __init__(
         self,
         env: DiscreteEnv,
-        max_iterations: int = 100,
-        eps: float = 1e-8,
+        nb_iterations: int = 100,
+        eps: Optional[float] = None,
         discount: float = 0.9,
     ):
         self.env = env
         self.eps = eps
         self.discount = discount
         self.v = self._new_value_function()
-        self.max_iterations = max_iterations
+        self.nb_iterations = nb_iterations
         self.policy: Dict = {}
 
     def _random(self):
@@ -57,7 +57,7 @@ class _ValueIteration:
         """Run value iteration against a DiscreteEnv environment."""
         delta = np.inf
         iteration = 0
-        while not delta < self.eps and iteration < self.max_iterations:
+        while (self.eps and not delta < self.eps) and iteration < self.nb_iterations:
             delta = 0
             next_v = self._new_value_function()
             for s in iter_space(self.env.observation_space):

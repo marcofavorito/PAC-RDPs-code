@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
-export PYTHONPATH="."
+set -e
 
-python3 experiments/run.py experiments/driving_agent/config.json
-python3 experiments/run.py experiments/cheatmab-02-001/config.json
-python3 experiments/run.py experiments/malfunctionmab-02-80-20/config.json
-python3 experiments/run.py experiments/rotmab-03-10-20-90/config.json
-python3 experiments/run.py experiments/rotmab-02-90-20/config.json
+export PYTHONPATH=".:${PYTHONPATH}"
+DEFAULT_OUTPUT_DIR="."
+DEFAULT_ENVS="driving_agent cheatmab-02-001 malfunctionmab-02-80-20 rotmab-03-10-20-90 rotmab-02-90-20"
+OUTPUT_DIR="${1:-${DEFAULT_OUTPUT_DIR}}"
+ENVS="${2:-${DEFAULT_ENVS}}"
+
+for env in ${ENVS}; do
+  python3 scripts/run.py experiments/${env}/config.json --output-dir ${OUTPUT_DIR}/${env} --overwrite experiments/global.json
+done
+
+set +e

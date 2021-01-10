@@ -1,5 +1,6 @@
 """Abstract RDP agent."""
 import logging
+import math
 import pprint
 from abc import ABC, abstractmethod
 from copy import copy
@@ -54,6 +55,15 @@ class BasePacRdpAgent(Agent, ABC):
     def get_stop_probability(self) -> float:
         """Get current stop probability."""
 
+    def _compute_nb_iteration_vi(self):
+        """Compute number of iterations for Value Iteration."""
+        gamma = self.gamma
+        eps = self.epsilon
+        c = 2
+        rmax = max(self.env.rewards)
+        e6 = (1 - gamma) ** 3 * eps / (2 * (1 + c) * rmax)
+        return 1 / (1 - gamma) * math.log(2 * (1 - gamma) / e6 / rmax)
+
     def _encode_reward(self, reward: float) -> int:
         """Encode the reward."""
         return self.env.rewards.index(reward)  # type: ignore
@@ -97,7 +107,7 @@ class BasePacRdpAgent(Agent, ABC):
                 alphabet_size=self._rdp_generator.alphabet_size(),
                 delta=self.delta ** 2,
                 with_infty_norm=False,
-                with_smoothing=True,
+                with_smoothing=False,
             )
         except Exception as e:
             logging.exception(e)
@@ -113,10 +123,13 @@ class BasePacRdpAgent(Agent, ABC):
         logging.info(f"Observation space: {new_env.observation_space}")
         logging.info(f"Action space: {new_env.action_space}")
         logging.info(f"Dynamics:\n{pprint.pformat(new_env.P)}")
-        self.value_function, self.current_policy = value_iteration(
-            new_env, max_iterations=50, discount=self.gamma
-        )
+
+        nb_iterations = math.ceil(self._compute_nb_iteration_vi())
+        logging.info(f"Executing Value Iteration for {nb_iterations} iterations.")
         logging.info("Value iteration completed.")
+        self.value_function, self.current_policy = value_iteration(
+            new_env, nb_iterations=nb_iterations, discount=self.gamma
+        )
 
     def __getstate__(self):
         """Get state."""

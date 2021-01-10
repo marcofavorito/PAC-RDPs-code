@@ -32,6 +32,8 @@ graphviz = "*"
 jupyter = "*"
 pynput = "*"
 hypothesis = "*"
+seaborn = "*"
+pdfa-learning = {path = "./pdfa-learning"}
 
 [requires]
-python_version = "3.7"
+python_version = "3"

@@ -11,8 +11,6 @@ from typing import List
 import numpy as np
 
 from src.helpers.stats import stats_from_json
-from yarllib.helpers.history import history_from_json, EpisodeHistory
-from yarllib.helpers.plots import plot_summaries
 
 
 def _is_dir(p: Path):
@@ -76,6 +74,8 @@ if __name__ == '__main__':
             # run_data = np.concatenate([steps, rewards], axis=1)
             run_data = rewards
             experiment_data.append(run_data)
+        min_len = min([r.shape[0] for r in experiment_data])
+        experiment_data = [r[:min_len, :] for r in experiment_data]
         datas.append(np.stack(experiment_data))
 
     for experiment_id, history in enumerate(histories):
@@ -85,6 +85,9 @@ if __name__ == '__main__':
         average_rewards = experiment_data.mean(axis=2)
         average_rewards_mean = average_rewards.mean(axis=0)
         average_rewards_std = average_rewards.std(axis=0)
+        steps = steps[:min_len]
+        average_rewards_mean = average_rewards_mean[:min_len]
+        average_rewards_std = average_rewards_std[:min_len]
         sns_ax = sns.lineplot(steps, average_rewards_mean, label=label)
         sns_ax.fill_between(steps, average_rewards_mean - average_rewards_std, average_rewards_mean + average_rewards_std, alpha=0.3)
     plt.savefig(Path(output_dir) / "plot.svg")
