@@ -11,7 +11,7 @@ spec:
       containers:
       - name: experiment-image
         image: gcr.io/pac-rdp-learning/experiment-image
-        command: ["pipenv", "run", "./scripts/run-all.sh", "/var/lib/experiments/data/${MY_POD_NAME}"]
+        command: ["pipenv", "run", "./run-all-cloud.sh", "/var/lib/experiments/data/${MY_POD_NAME}"]
         env:
           - name: MY_POD_NAME
             valueFrom:

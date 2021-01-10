@@ -32,12 +32,13 @@ RUN apt-get install -y                                                       \
        libfreetype6                                                          \
        libfreetype6-dev
 
+RUN pip3 install pipenv
+
 RUN mkdir /build
 WORKDIR /build
-COPY . /build
 
-RUN pip3 install pipenv
-RUN pipenv --python python3.8
-RUN pipenv install --dev --skip-lock
+# TODO not good to save token in Docker image...
+COPY .github_access_token /build
+COPY scripts/run-all-cloud.sh /build
 
 CMD ["/bin/bash"]
